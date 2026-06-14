@@ -8,9 +8,9 @@ import { useTeacherGroups } from "@/features/groups/hooks/useGroups"
 import ApiErrorAlert from "@/shared/ui/ApiErrorAlert"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { Input } from "@/shared/ui/input"
 import { Label } from "@/shared/ui/label"
+import ShellPage from "@/shared/ui/ShellPage"
 import SimpleSelect from "@/shared/ui/SimpleSelect"
 import { showError, showSuccess } from "@/shared/utils/toast"
 
@@ -54,18 +54,11 @@ export default function TeacherAssignmentSetsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Наборы заданий</h1>
-        <p className="text-sm text-muted-foreground">Соберите подборку задач для группы</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Создать набор</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={onCreate}>
+    <ShellPage title="Наборы заданий" subtitle="Соберите подборку задач для группы">
+      <div className="grid gap-[18px]">
+      <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
+        <b className="mb-4 block text-[15px]">Создать набор</b>
+        <form className="space-y-4" onSubmit={onCreate}>
             <div className="space-y-2">
               <Label htmlFor="set-name">Название</Label>
               <Input
@@ -100,14 +93,12 @@ export default function TeacherAssignmentSetsPage() {
               {createMutation.isPending ? "Создание…" : "Создать набор"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+          {formError ? <ApiErrorAlert error={formError} className="mt-4" /> : null}
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Мои наборы</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
+        <b className="mb-4 block text-[15px]">Мои наборы</b>
+        <div className="space-y-4">
           {setsQuery.isLoading ? (
             <p className="text-sm text-muted-foreground">Загрузка…</p>
           ) : !setsQuery.data?.length ? (
@@ -124,9 +115,10 @@ export default function TeacherAssignmentSetsPage() {
               />
             ))
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+      </div>
+    </ShellPage>
   )
 }
 
@@ -161,7 +153,7 @@ function AssignmentSetCard({
   }
 
   return (
-    <div data-testid={`teacher-assignment-set-${set.id}`} className="rounded-lg border p-4 space-y-3">
+    <div data-testid={`teacher-assignment-set-${set.id}`} className="space-y-3 rounded-xl border border-border bg-surface-2 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-medium">{set.name}</h2>
         <Badge variant="outline">{set.visibility}</Badge>

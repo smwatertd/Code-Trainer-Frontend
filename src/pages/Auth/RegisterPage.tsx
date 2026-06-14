@@ -1,11 +1,11 @@
 import { useState, type FormEvent, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/features/auth"
-import { Alert, AlertDescription } from "@/shared/ui/alert"
-import { Button } from "@/shared/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
+import { AuthCardLayout } from "@/shared/ui/AuthLayout"
+import Brand from "@/shared/ui/Brand"
 import { Input } from "@/shared/ui/input"
 import { Label } from "@/shared/ui/label"
+import { Button } from "@/shared/ui/button"
 import { getApiErrorMessage } from "@/shared/utils/apiErrors"
 
 export default function RegisterPage() {
@@ -38,55 +38,81 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-56px)] max-w-md items-center px-4 py-10">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Регистрация</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="name">Имя</Label>
-              <Input id="name" value={name} onChange={(event) => setName(event.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Пароль</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                minLength={8}
-                required
-              />
-            </div>
-            {error ? (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Создаём…" : "Создать аккаунт"}
-            </Button>
-          </form>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Уже есть аккаунт?{" "}
-            <Link to="/login" className="text-primary hover:underline">
-              Войти
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <AuthCardLayout>
+      <form onSubmit={onSubmit}>
+        <div className="mb-[18px] flex justify-center">
+          <Brand />
+        </div>
+
+        <h1 className="mb-1.5 text-center text-2xl font-extrabold">Создать аккаунт</h1>
+        <p className="mb-6 text-center text-sm text-ink-muted">Бесплатно. Старт за минуту.</p>
+
+        {error ? (
+          <div className="tp-note mb-3.5 border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-[#ff8198]">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mb-4 space-y-2">
+          <Label htmlFor="name" className="text-[13px] font-semibold text-ink-muted">
+            Имя
+          </Label>
+          <Input
+            id="name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Влада"
+            className="h-[42px] border-[#333d4f] bg-bg-2 focus-visible:ring-lime"
+            required
+          />
+        </div>
+
+        <div className="mb-4 space-y-2">
+          <Label htmlFor="email" className="text-[13px] font-semibold text-ink-muted">
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+            className="h-[42px] border-[#333d4f] bg-bg-2 focus-visible:ring-lime"
+            required
+          />
+        </div>
+
+        <div className="mb-5 space-y-2">
+          <Label htmlFor="password" className="text-[13px] font-semibold text-ink-muted">
+            Пароль
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Минимум 8 символов"
+            minLength={8}
+            className="h-[42px] border-[#333d4f] bg-bg-2 focus-visible:ring-lime"
+            required
+          />
+        </div>
+
+        <Button type="submit" disabled={isLoading} className="h-[42px] w-full">
+          {isLoading ? "Создаём…" : "Зарегистрироваться"}
+        </Button>
+
+        <p className="mt-3.5 text-center text-xs text-ink-faint">
+          Регистрируясь, вы принимаете условия использования
+        </p>
+
+        <p className="mt-3.5 text-center text-[13.5px] text-ink-muted">
+          Уже есть аккаунт?{" "}
+          <Link to="/login" className="font-semibold text-lime hover:underline">
+            Войти
+          </Link>
+        </p>
+      </form>
+    </AuthCardLayout>
   )
 }

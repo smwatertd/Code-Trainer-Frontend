@@ -9,6 +9,7 @@ import {
 export type SelectOption = {
   value: string
   label: string
+  disabled?: boolean
 }
 
 type SimpleSelectProps = {
@@ -39,7 +40,7 @@ export default function SimpleSelect({
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+          <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
             {option.label}
           </SelectItem>
         ))}

@@ -798,6 +798,12 @@ export interface components {
             difficulty: string;
             /** Task Type */
             task_type: string;
+            /** Topics */
+            topics?: string[];
+            /** Languages */
+            languages?: string[];
+            /** Progress Status */
+            progress_status?: string | null;
         };
         /** TechnicalConceptProgressResponse */
         TechnicalConceptProgressResponse: {

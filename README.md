@@ -18,8 +18,11 @@
 # terminal 1 — API + Postgres + Redis
 cd fixed && make dev && make seed-dev
 
-# terminal 2
+# terminal 2 — UI (нужен запущенный backend на :8000)
 cd fixed && make frontend-dev   # http://localhost:5173
+
+# или одной командой (backend + seed + frontend)
+cd fixed && make dev-all
 ```
 
 ### Dev-аккаунты

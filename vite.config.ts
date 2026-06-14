@@ -1,9 +1,36 @@
 import path from "node:path"
-import { defineConfig } from "vite"
+import { defineConfig, type Plugin } from "vite"
 import react from "@vitejs/plugin-react"
 
+const API_HEALTH_URL = process.env.VITE_API_HEALTH_URL ?? "http://localhost:8000/api/languages"
+
+function apiHealthPlugin(): Plugin {
+  return {
+    name: "api-health-check",
+    configureServer(server) {
+      server.httpServer?.once("listening", () => {
+        void fetch(API_HEALTH_URL)
+          .then((response) => {
+            if (!response.ok) {
+              console.warn(
+                `\n[vite] Backend ответил ${response.status} на ${API_HEALTH_URL}. Проверьте make dev.\n`,
+              )
+            }
+          })
+          .catch(() => {
+            console.warn(
+              "\n[vite] Backend недоступен на http://localhost:8000\n" +
+                "       Запустите в другом терминале: cd fixed && make dev && make seed-dev\n" +
+                "       Или всё сразу: cd fixed && make dev-all\n",
+            )
+          })
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), apiHealthPlugin()],
   test: {
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     exclude: ["e2e/**", "node_modules/**", "dist/**"],

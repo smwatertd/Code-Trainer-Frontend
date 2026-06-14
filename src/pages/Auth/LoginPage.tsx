@@ -1,11 +1,10 @@
 import { useState, type FormEvent, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/features/auth"
-import { Alert, AlertDescription } from "@/shared/ui/alert"
-import { Button } from "@/shared/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
+import { AuthGuestLink, AuthSplitLayout } from "@/shared/ui/AuthLayout"
 import { Input } from "@/shared/ui/input"
 import { Label } from "@/shared/ui/label"
+import { Button } from "@/shared/ui/button"
 import { getApiErrorMessage } from "@/shared/utils/apiErrors"
 
 export default function LoginPage() {
@@ -40,50 +39,60 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-56px)] max-w-md items-center px-4 py-10">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Вход</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Пароль</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </div>
-            {error ? (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Входим…" : "Войти"}
-            </Button>
-          </form>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Нет аккаунта?{" "}
-            <Link to="/register" className="text-primary hover:underline">
-              Зарегистрироваться
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <AuthSplitLayout>
+      <form className="auth-form-inner" onSubmit={onSubmit}>
+        <h1 className="mb-1.5 text-2xl font-extrabold">С возвращением</h1>
+        <p className="mb-6 text-sm text-ink-muted">Войдите, чтобы продолжить обучение.</p>
+
+        {error ? (
+          <div className="tp-note mb-3.5 border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-[#ff8198]">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mb-4 space-y-2">
+          <Label htmlFor="email" className="text-[13px] font-semibold text-ink-muted">
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="h-[42px] border-[#333d4f] bg-bg-2 focus-visible:ring-lime"
+            required
+          />
+        </div>
+
+        <div className="mb-5 space-y-2">
+          <Label htmlFor="password" className="text-[13px] font-semibold text-ink-muted">
+            Пароль
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="h-[42px] border-[#333d4f] bg-bg-2 focus-visible:ring-lime"
+            required
+          />
+        </div>
+
+        <Button type="submit" disabled={isLoading} className="h-[42px] w-full">
+          {isLoading ? "Входим…" : "Войти"}
+        </Button>
+
+        <AuthGuestLink />
+
+        <p className="mt-5 text-center text-[13.5px] text-ink-muted">
+          Нет аккаунта?{" "}
+          <Link to="/register" className="font-semibold text-[#b89bff] hover:underline">
+            Зарегистрироваться
+          </Link>
+        </p>
+      </form>
+    </AuthSplitLayout>
   )
 }

@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures/playwright"
 import { DEV_USERS } from "./fixtures"
-import { loginAs } from "./helpers"
+import { loginAs, expectLoggedOut } from "./helpers"
 
 test("teacher creates group and assignment set with task", async ({ page }) => {
   await loginAs(page, DEV_USERS.teacher.email, DEV_USERS.teacher.password)
@@ -34,7 +34,7 @@ test("teacher creates group and assignment set with task", async ({ page }) => {
   await expect(setCard.getByText("Задача 4")).toBeVisible()
 
   await page.getByTestId("logout-btn").click()
-  await expect(page.getByRole("banner").getByRole("link", { name: "Войти" })).toBeVisible()
+  await expectLoggedOut(page)
   await loginAs(page, DEV_USERS.student.email, DEV_USERS.student.password)
 
   await page.goto("/groups/join")
@@ -48,7 +48,7 @@ test("teacher creates group and assignment set with task", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Задача 4" })).toBeVisible()
 
   await page.getByTestId("logout-btn").click()
-  await expect(page.getByRole("banner").getByRole("link", { name: "Войти" })).toBeVisible()
+  await expectLoggedOut(page)
   await loginAs(page, DEV_USERS.teacher.email, DEV_USERS.teacher.password)
   await page.goto(`/teacher/groups/${groupId}/dashboard`)
   await expect(page.getByTestId("group-dashboard")).toBeVisible()

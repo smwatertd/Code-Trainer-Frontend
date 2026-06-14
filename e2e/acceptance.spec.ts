@@ -1,24 +1,15 @@
 import { test, expect } from "./fixtures/playwright"
-import { DEV_USERS, SOLUTIONS } from "./fixtures"
-import {
-  clickCheckAndExpectSuccess,
-  fillCodeEditor,
-  loginAs,
-  openTask,
-} from "./helpers"
+import { DEV_USERS } from "./fixtures"
+import { loginAs, openTask, solveTranslationTask3Sum, expectLoggedOut } from "./helpers"
 
-test("submit task 4 updates loops progress on home", async ({ page }) => {
+test("submit task 3 updates loops progress on home", async ({ page }) => {
   await loginAs(page, DEV_USERS.student.email, DEV_USERS.student.password)
 
-  await page.goto("/tasks/4")
-  await expect(page.getByRole("heading", { name: "Вывод с циклом for" })).toBeVisible()
-  await fillCodeEditor(page, SOLUTIONS.task4ForLoop)
-  await clickCheckAndExpectSuccess(page)
+  await solveTranslationTask3Sum(page)
 
   await page.goto("/")
-  await expect(page.getByTestId("progress-track-loops")).toBeVisible()
-  await expect(page.getByTestId("progress-loops-stats")).toContainText("1 / 1")
-  await expect(page.getByTestId("progress-loops-percent")).toContainText("100%")
+  await expect(page.getByTestId("learning-language-python")).toBeVisible()
+  await expect(page.getByTestId("learning-language-python-stats")).toContainText("1/1")
 })
 
 test("logout returns guest access to catalog and tasks", async ({ page }) => {
@@ -26,12 +17,12 @@ test("logout returns guest access to catalog and tasks", async ({ page }) => {
   await expect(page.getByTestId("user-info")).toBeVisible()
 
   await page.getByTestId("logout-btn").click()
-  await expect(page.getByRole("banner").getByRole("link", { name: "Войти" })).toBeVisible()
+  await expectLoggedOut(page)
 
   await page.goto("/")
-  await expect(page.getByRole("heading", { name: "Задачи" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Список задач" })).toBeVisible()
   await expect(page.getByTestId("guest-banner")).toBeVisible()
 
-  await openTask(page, 2)
-  await expect(page.getByRole("heading", { name: "Упорядочить вывод" })).toBeVisible()
+  await openTask(page, 1)
+  await expect(page.getByRole("heading", { name: "Вывести приветствие" })).toBeVisible()
 })

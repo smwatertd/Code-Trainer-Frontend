@@ -1,29 +1,24 @@
-import { useEffect, useRef, useState } from "react"
+import { useMemo, type ReactNode } from "react"
 import type { useTaskSolver } from "@/features/task-solving"
 import { useLanguages } from "@/features/languages/hooks/useLanguages"
 import { getTaskBlocks } from "@/features/task-solving/model/solverState"
+import { hasReferencePane } from "@/features/task-solving/model/studentUiUtils"
 import BlockReorderEditor from "@/widgets/block-reorder/BlockReorderEditor"
 import CodeEditor from "@/widgets/code-editor/CodeEditor"
 import FlowchartEditor from "@/widgets/flowchart-editor/FlowchartEditor"
-import ResultsPanel from "@/widgets/results-panel/ResultsPanel"
-import { Badge } from "@/shared/ui/badge"
-import { Button } from "@/shared/ui/button"
-import { Card, CardContent } from "@/shared/ui/card"
-import { Label } from "@/shared/ui/label"
-import SimpleSelect from "@/shared/ui/SimpleSelect"
+import ParallelLanguageBar from "@/widgets/task-workspace/ParallelLanguageBar"
+import TaskBottomPanel from "@/widgets/task-workspace/TaskBottomPanel"
+import TaskLeftRail from "@/widgets/task-workspace/TaskLeftRail"
+import ResizableBottomPanel from "@/widgets/task-workspace/ResizableBottomPanel"
+import { useMediaQuery } from "@/shared/hooks/useMediaQuery"
 import { Alert, AlertDescription } from "@/shared/ui/alert"
-import { labelLanguage, labelTaskType } from "@/shared/utils/labels"
+import ResizableSplit from "@/shared/ui/ResizableSplit"
 import {
   isBlockReorderTask,
   isCodeToFlowchartTask,
   isCodingTask,
   isFlowchartTask,
-  isTranslationTask,
   isWriteFromDescriptionTask,
-  problemStatement,
-  sourceCode,
-  selectableLanguages,
-  resolveSolverLanguage,
 } from "@/shared/utils/taskTypes"
 
 type Solver = ReturnType<typeof useTaskSolver>
@@ -31,194 +26,216 @@ type Solver = ReturnType<typeof useTaskSolver>
 type TaskWorkspaceProps = {
   solver: Solver
   isGuest?: boolean
-  showSubmissionHistory?: boolean
 }
 
-export default function TaskWorkspace({ solver, isGuest = false, showSubmissionHistory = false }: TaskWorkspaceProps) {
+function EditorShell({
+  title,
+  children,
+}: {
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 border-b border-border bg-[#0c111a] px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-ink-faint">
+        {title}
+      </div>
+      <div className="min-h-0 flex-1 overflow-hidden p-2">{children}</div>
+    </div>
+  )
+}
+
+export default function TaskWorkspace({ solver, isGuest = false }: TaskWorkspaceProps) {
   const { data: languages = [] } = useLanguages()
-  const leftColumnRef = useRef<HTMLDivElement>(null)
-  const [leftColumnHeight, setLeftColumnHeight] = useState<number | null>(null)
+  const isWideLayout = useMediaQuery("(min-width: 1280px)")
+  const isEditorSplit = useMediaQuery("(min-width: 1024px)")
   const {
     task,
     code,
     setCode,
     language,
     setLanguage,
+    knownLanguage,
+    setKnownLanguage,
+    knownLanguages,
+    learningLanguages,
+    referenceCode,
+    swapLanguages,
     blockOrder,
     setBlockOrder,
     flow,
     setFlow,
     result,
     isSubmitting,
-    submitError,
-    pollError,
     runCheck,
-    selectedSubmissionId,
-    loadSubmissionFromHistory,
     assembledCode,
   } = solver
-
-  useEffect(() => {
-    const node = leftColumnRef.current
-    if (!node) {
-      setLeftColumnHeight(null)
-      return
-    }
-
-    const desktopQuery = window.matchMedia("(min-width: 1024px)")
-
-    const updateHeight = () => {
-      if (!desktopQuery.matches) {
-        setLeftColumnHeight(null)
-        return
-      }
-      setLeftColumnHeight(node.offsetHeight)
-    }
-
-    updateHeight()
-    const observer = new ResizeObserver(updateHeight)
-    observer.observe(node)
-    desktopQuery.addEventListener("change", updateHeight)
-    window.addEventListener("resize", updateHeight)
-    return () => {
-      observer.disconnect()
-      desktopQuery.removeEventListener("change", updateHeight)
-      window.removeEventListener("resize", updateHeight)
-    }
-  }, [task?.id])
 
   if (!task) return null
 
   const blocks = getTaskBlocks(task, language)
   const monacoLanguage =
     languages.find((item) => item.id === language)?.monaco_language ?? language
-  const languageOptions = selectableLanguages(task, languages.length ? languages : [{ id: language, label: language }])
-  const resolvedLanguage = resolveSolverLanguage(
+  const knownMonacoLanguage =
+    languages.find((item) => item.id === knownLanguage)?.monaco_language ?? knownLanguage
+  const showReferenceSplit = hasReferencePane(task)
+  const showLanguageBar = knownLanguages.length > 0 || learningLanguages.length > 1
+
+  const editorPane = useMemo(() => {
+    if (isBlockReorderTask(task)) {
+      return (
+        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+          <BlockReorderEditor blocks={blocks} order={blockOrder} onChange={setBlockOrder} />
+        </div>
+      )
+    }
+
+    if (isFlowchartTask(task)) {
+      return (
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-2">
+          {isCodeToFlowchartTask(task) ? (
+            <Alert>
+              <AlertDescription className="text-sm">
+                Постройте блок-схему по программе слева. Код меняется при выборе языка и не
+                редактируется.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          <FlowchartEditor key={task.id} value={flow} onChange={setFlow} />
+        </div>
+      )
+    }
+
+    if (isCodingTask(task)) {
+      return (
+        <div className="h-full min-h-[200px] overflow-hidden">
+          <CodeEditor
+            value={code}
+            onChange={setCode}
+            language={monacoLanguage}
+            height="100%"
+          />
+        </div>
+      )
+    }
+
+    return null
+  }, [
+    blockOrder,
+    blocks,
+    code,
+    flow,
+    monacoLanguage,
+    setBlockOrder,
+    setCode,
+    setFlow,
     task,
-    language,
-    languageOptions.map((item) => item.id),
+  ])
+
+  const referencePane = (
+    <EditorShell title={`Эталон · ${knownLanguage}`}>
+      <div className="h-full min-h-[200px] overflow-hidden">
+        <CodeEditor
+          value={referenceCode}
+          onChange={() => {}}
+          language={knownMonacoLanguage}
+          readOnly
+          height="100%"
+        />
+      </div>
+    </EditorShell>
+  )
+
+  const learningPane = (
+    <EditorShell
+      title={isWriteFromDescriptionTask(task) ? "Решение" : `Учу · ${language}`}
+    >
+      {editorPane}
+      {isBlockReorderTask(task) ? (
+        <div className="mt-2 shrink-0 border-t border-border pt-2">
+          <div className="mb-1 text-xs text-muted-foreground">Собранный код</div>
+          <CodeEditor
+            value={assembledCode}
+            onChange={setCode}
+            language={monacoLanguage}
+            readOnly
+            height="120px"
+          />
+        </div>
+      ) : null}
+    </EditorShell>
+  )
+
+  const editorArea = (
+    <div className="flex h-full min-h-0 min-w-0 flex-col bg-bg-2">
+      {showLanguageBar ? (
+        <ParallelLanguageBar
+          knownLanguage={knownLanguage}
+          learningLanguage={language}
+          knownLanguages={knownLanguages.length ? knownLanguages : [knownLanguage]}
+          learningLanguages={learningLanguages.length ? learningLanguages : [language]}
+          onKnownLanguageChange={setKnownLanguage}
+          onLearningLanguageChange={setLanguage}
+          onSwap={swapLanguages}
+        />
+      ) : null}
+
+      <div className="min-h-0 flex-1">
+        {showReferenceSplit ? (
+          <ResizableSplit
+            layout="row"
+            storageKey="task-workspace-editors"
+            defaultFirstRatio={0.5}
+            minFirst={240}
+            minSecond={240}
+            disabled={!isEditorSplit}
+            className="h-full"
+            first={referencePane}
+            second={learningPane}
+          />
+        ) : (
+          learningPane
+        )}
+      </div>
+    </div>
+  )
+
+  const workspaceMain = (
+    <ResizableSplit
+      layout="row"
+      storageKey="task-workspace-main"
+      defaultFirstRatio={0.42}
+      minFirst={280}
+      minSecond={360}
+      disabled={!isWideLayout}
+      className="h-full min-h-0"
+      first={
+        <div className="h-full min-h-0 overflow-hidden border-b border-border xl:border-b-0 xl:border-r">
+          <TaskLeftRail task={task} />
+        </div>
+      }
+      second={editorArea}
+    />
   )
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start">
-      <div ref={leftColumnRef} className="min-w-0 flex-1">
-        <Card>
-          <CardContent className="space-y-4 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h1 className="text-xl font-semibold">{task.title}</h1>
-                <p className="mt-1 text-sm text-muted-foreground">{task.description}</p>
-              </div>
-              <Badge variant="secondary">{labelTaskType(task.task_type)}</Badge>
-            </div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-hidden">{workspaceMain}</div>
 
-            {isTranslationTask(task) && sourceCode(task) ? (
-              <div>
-                <Label className="mb-2 block">Исходный код</Label>
-                <CodeEditor value={sourceCode(task)} onChange={() => {}} readOnly height="180px" />
-              </div>
-            ) : null}
-
-            {isWriteFromDescriptionTask(task) ? (
-              <Alert>
-                <AlertDescription className="text-sm">
-                  Напишите программу по условию в описании задачи. Решение проверяется автоматически
-                  по тестам на сервере.
-                </AlertDescription>
-              </Alert>
-            ) : null}
-
-            {isWriteFromDescriptionTask(task) && problemStatement(task) ? (
-              <div className="rounded-md border bg-muted/40 p-3">
-                <Label className="mb-2 block">Подробное условие</Label>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                  {problemStatement(task)}
-                </p>
-              </div>
-            ) : null}
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Label htmlFor="language-select">Язык</Label>
-              <SimpleSelect
-                id="language-select"
-                triggerTestId="language-select"
-                value={resolvedLanguage}
-                onValueChange={setLanguage}
-                className="w-[180px]"
-                options={languageOptions.map((item) => ({
-                  value: item.id,
-                  label: item.label ?? labelLanguage(item.id),
-                }))}
-              />
-              <Button onClick={() => void runCheck()} disabled={isSubmitting} data-testid="task-check-btn">
-                {isSubmitting ? "Проверка…" : "Проверить"}
-              </Button>
-            </div>
-
-            {isBlockReorderTask(task) ? (
-              <BlockReorderEditor blocks={blocks} order={blockOrder} onChange={setBlockOrder} />
-            ) : null}
-
-            {isFlowchartTask(task) ? (
-              <div className="space-y-4">
-                <Alert>
-                  <AlertDescription className="text-sm">
-                    Постройте блок-схему по программе слева. Код меняется при выборе языка и не
-                    редактируется. Для «Условия» проведите две стрелки из правой и левой точек. У
-                    «Цикла» верхняя точка — вход и возврат из тела; нижняя — выход; слева — в
-                    тело; справа — обратно из тела.
-                  </AlertDescription>
-                </Alert>
-                {isCodeToFlowchartTask(task) ? (
-                  <div>
-                    <Label className="mb-2 block">Код программы (только для чтения)</Label>
-                    <CodeEditor
-                      value={code}
-                      onChange={() => {}}
-                      language={monacoLanguage}
-                      readOnly
-                      height="180px"
-                    />
-                  </div>
-                ) : null}
-                <FlowchartEditor key={task.id} value={flow} onChange={setFlow} />
-              </div>
-            ) : null}
-
-            {isCodingTask(task) ? (
-              <CodeEditor value={code} onChange={setCode} language={monacoLanguage} />
-            ) : null}
-
-            {isBlockReorderTask(task) ? (
-              <div>
-                <Label className="mb-2 block">Собранный код</Label>
-                <CodeEditor
-                  value={assembledCode}
-                  onChange={setCode}
-                  language={monacoLanguage}
-                  readOnly
-                />
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
-
-      <aside
-        className="flex min-h-0 w-full flex-col lg:w-[360px] lg:shrink-0"
-        style={leftColumnHeight != null ? { height: leftColumnHeight } : undefined}
-      >
-        <ResultsPanel
+      <ResizableBottomPanel>
+        <TaskBottomPanel
+          task={task}
           result={result}
-          submitError={submitError}
-          pollError={pollError}
-          isGuest={isGuest}
-          taskId={showSubmissionHistory ? task.id : null}
-          showHistory={showSubmissionHistory}
-          selectedSubmissionId={selectedSubmissionId}
-          onSelectHistoryItem={(item) => void loadSubmissionFromHistory(item.id)}
+          onRun={() => void runCheck()}
+          isSubmitting={isSubmitting}
         />
-      </aside>
+      </ResizableBottomPanel>
+
+      {isGuest ? (
+        <p className="shrink-0 border-t border-border px-4 py-2 text-center text-xs text-muted-foreground">
+          Гостевой режим — прогресс не сохраняется.
+        </p>
+      ) : null}
     </div>
   )
 }

@@ -8,10 +8,10 @@ import {
   useValidateCurriculumLink,
 } from "@/features/curriculum"
 import ApiErrorAlert from "@/shared/ui/ApiErrorAlert"
+import ShellPage from "@/shared/ui/ShellPage"
 import { Alert, AlertDescription } from "@/shared/ui/alert"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { Input } from "@/shared/ui/input"
 import { Label } from "@/shared/ui/label"
 import {
@@ -19,6 +19,7 @@ import {
   labelLearningConcept,
   labelTechnicalConcept,
 } from "@/shared/utils/labels"
+import { showError, showSuccess } from "@/shared/utils/toast"
 
 export default function TaskCurriculumPage() {
   const { id } = useParams()
@@ -86,29 +87,28 @@ export default function TaskCurriculumPage() {
   const metadata = linksQuery.data
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Связи с учебным планом</h1>
-          <p className="text-sm text-muted-foreground">
-            {task ? `Задача #${task.id}: ${task.title}` : `Задача #${id}`}
-          </p>
-        </div>
-        <Button variant="outline" asChild>
+    <ShellPage
+      title="Связи с учебным планом"
+      subtitle={task ? `Задача #${task.id}: ${task.title}` : `Задача #${id}`}
+      right={
+        <Button variant="outline" size="sm" asChild>
           <Link to={taskId ? `/tasks/${taskId}` : "/"}>К задаче</Link>
         </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Проверить и создать связь</CardTitle>
-        </CardHeader>
-        <CardContent>
+      }
+    >
+      <div className="grid gap-[18px]">
+        <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
+          <b className="mb-4 block text-[15px]">Проверить и создать связь</b>
           <form className="space-y-4" onSubmit={onValidate}>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="lang">Язык</Label>
-                <Input id="lang" value={language} onChange={(e) => setLanguage(e.target.value)} />
+                <Input
+                  id="lang"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="h-[42px] border-[#333d4f] bg-bg-2"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="technical">Техническая тема</Label>
@@ -116,6 +116,7 @@ export default function TaskCurriculumPage() {
                   id="technical"
                   value={technicalConceptId}
                   onChange={(e) => setTechnicalConceptId(e.target.value)}
+                  className="h-[42px] border-[#333d4f] bg-bg-2"
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
@@ -124,6 +125,7 @@ export default function TaskCurriculumPage() {
                   id="pattern"
                   value={exercisePatternId}
                   onChange={(e) => setExercisePatternId(e.target.value)}
+                  className="h-[42px] border-[#333d4f] bg-bg-2"
                 />
               </div>
             </div>
@@ -134,63 +136,71 @@ export default function TaskCurriculumPage() {
               </Alert>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" variant="outline" disabled={validateMutation.isPending} data-testid="curriculum-validate-btn">
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={validateMutation.isPending}
+                data-testid="curriculum-validate-btn"
+              >
                 {validateMutation.isPending ? "Проверка…" : "Проверить связь"}
               </Button>
-              <Button type="button" onClick={() => void onCreate()} disabled={createMutation.isPending} data-testid="curriculum-create-btn">
+              <Button
+                type="button"
+                onClick={() => void onCreate()}
+                disabled={createMutation.isPending}
+                data-testid="curriculum-create-btn"
+              >
                 {createMutation.isPending ? "Создание…" : "Создать основную связь"}
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Текущие связи</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {linksQuery.isLoading ? (
-            <p className="text-sm text-muted-foreground">Загрузка…</p>
-          ) : !metadata?.links?.length ? (
-            <p className="text-sm text-muted-foreground">Связей нет</p>
-          ) : (
-            metadata.links.map((link) => (
-              <div
-                key={link.id}
-                data-testid={`curriculum-link-${link.id}`}
-                className="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-3"
-              >
-                <div className="space-y-1 text-sm">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge>{labelLanguage(link.language)}</Badge>
-                    {link.is_primary ? <Badge variant="default">Основная</Badge> : null}
-                  </div>
-                  <p>
-                    <span className="text-muted-foreground">Тема:</span>{" "}
-                    {labelLearningConcept(link.learning_concept_id)}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Техническая тема:</span>{" "}
-                    {labelTechnicalConcept(link.technical_concept_id)}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Шаблон:</span> {link.exercise_pattern_id}
-                  </p>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => void onDelete(link.id)}
-                  disabled={deleteMutation.isPending}
+        <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
+          <b className="mb-4 block text-[15px]">Текущие связи</b>
+          <div className="space-y-3">
+            {linksQuery.isLoading ? (
+              <p className="text-sm text-ink-muted">Загрузка…</p>
+            ) : !metadata?.links?.length ? (
+              <p className="text-sm text-ink-muted">Связей нет</p>
+            ) : (
+              metadata.links.map((link) => (
+                <div
+                  key={link.id}
+                  data-testid={`curriculum-link-${link.id}`}
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border bg-surface-2 p-3"
                 >
-                  Удалить
-                </Button>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge>{labelLanguage(link.language)}</Badge>
+                      {link.is_primary ? <Badge variant="default">Основная</Badge> : null}
+                    </div>
+                    <p>
+                      <span className="text-ink-muted">Тема:</span>{" "}
+                      {labelLearningConcept(link.learning_concept_id)}
+                    </p>
+                    <p>
+                      <span className="text-ink-muted">Техническая тема:</span>{" "}
+                      {labelTechnicalConcept(link.technical_concept_id)}
+                    </p>
+                    <p>
+                      <span className="text-ink-muted">Шаблон:</span> {link.exercise_pattern_id}
+                    </p>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => void onDelete(link.id)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    Удалить
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </ShellPage>
   )
 }

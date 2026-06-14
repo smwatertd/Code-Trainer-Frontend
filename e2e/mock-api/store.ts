@@ -1,4 +1,6 @@
 import {
+  buildMockCollectionShowcase,
+  buildMockLanguageTrack,
   curriculumValidation,
   emptyLearningProgress,
   MOCK_DEV_USERS,
@@ -88,6 +90,43 @@ function randomInviteCode() {
   return `INV${Math.random().toString(36).slice(2, 8).toUpperCase()}`
 }
 
+function summaryLanguages(payload: Record<string, unknown>): string[] {
+  const languages = new Set<string>()
+  for (const key of ["source_language", "target_language", "language"]) {
+    const value = payload[key]
+    if (typeof value === "string" && value.trim()) languages.add(value.trim().toLowerCase())
+  }
+  const blocksByLanguage = payload.blocks_by_language
+  if (blocksByLanguage && typeof blocksByLanguage === "object") {
+    for (const key of Object.keys(blocksByLanguage as Record<string, unknown>)) {
+      if (key) languages.add(key.toLowerCase())
+    }
+  }
+  return Array.from(languages).sort()
+}
+
+function toCatalogSummary(
+  task: (typeof MOCK_TASKS)[number],
+  store: MockApiStore,
+  userId: number | null,
+) {
+  const progress =
+    userId != null
+      ? store.taskProgress.get(store.progressKey(userId, task.id))
+      : undefined
+  return {
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    difficulty: task.difficulty,
+    task_type: task.task_type,
+    topics: [],
+    languages: summaryLanguages(task.payload),
+    progress_status:
+      userId != null ? progress?.progress_status ?? "not_started" : null,
+  }
+}
+
 export class MockApiStore {
   users: User[] = []
   groups: Group[] = []
@@ -163,12 +202,12 @@ export class MockApiStore {
     current.last_status = "SUCCESS"
     this.taskProgress.set(key, current)
 
-    if (taskId === 4) {
+    if (taskId === 3) {
       const loops = this.learningProgress.get("python:loops") ?? emptyLearningProgress("python", "loops")
       loops.passed_tasks = 1
       loops.progress_percent = 100
-      loops.by_task_id["4"] = {
-        task_id: 4,
+      loops.by_task_id["3"] = {
+        task_id: 3,
         progress_status: "passed",
         attempts_count: current.attempts_count,
         passed_count: 1,
@@ -185,15 +224,10 @@ export class MockApiStore {
     }
 
     if (method === "GET" && path === "/catalog/tasks") {
+      const userId = parseUserIdFromToken(authorization)
       return {
         status: 200,
-        body: MOCK_TASKS.map(({ id, title, description, difficulty, task_type }) => ({
-          id,
-          title,
-          description,
-          difficulty,
-          task_type,
-        })),
+        body: MOCK_TASKS.map((task) => toCatalogSummary(task, this, userId)),
       }
     }
 
@@ -313,6 +347,28 @@ export class MockApiStore {
         this.learningProgress.get(`${language}:${conceptId}`) ??
         emptyLearningProgress(language, conceptId)
       return { status: 200, body: progress }
+    }
+
+    const collectionsMatch = path.match(/^\/curriculum\/([^/]+)\/collections$/)
+    if (method === "GET" && collectionsMatch) {
+      const language = collectionsMatch[1]
+      const userId = parseUserIdFromToken(authorization)
+      return {
+        status: 200,
+        body: buildMockLanguageTrack(language, userId, this),
+      }
+    }
+
+    const showcaseMatch = path.match(/^\/curriculum\/([^/]+)\/collections\/([^/]+)$/)
+    if (method === "GET" && showcaseMatch) {
+      const language = showcaseMatch[1]
+      const conceptId = showcaseMatch[2]
+      const userId = parseUserIdFromToken(authorization)
+      const body = buildMockCollectionShowcase(language, conceptId, userId, this)
+      if (!body) {
+        return { status: 404, body: { error: { code: "NOT_FOUND", message: "Collection not found" } } }
+      }
+      return { status: 200, body }
     }
 
     if (method === "POST" && path === "/curriculum/tasks/validate-link") {

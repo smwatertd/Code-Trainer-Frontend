@@ -23,6 +23,11 @@ const TeacherTaskLibraryPage = lazy(() => import("@/pages/Teacher/TaskLibraryPag
 const TeacherAssignmentSetsPage = lazy(() => import("@/pages/Teacher/AssignmentSetsPage"))
 const JoinGroupPage = lazy(() => import("@/pages/Student/JoinGroupPage"))
 const StudentAssignmentSetsPage = lazy(() => import("@/pages/Student/AssignmentSetsPage"))
+const LearnTrackPage = lazy(() => import("@/pages/Student/LearnTrackPage"))
+const CollectionShowcasePage = lazy(() => import("@/pages/Student/CollectionShowcasePage"))
+const ProfilePage = lazy(() => import("@/pages/Student/ProfilePage"))
+const SettingsPage = lazy(() => import("@/pages/Settings/SettingsPage"))
+const TeacherCabinetPage = lazy(() => import("@/pages/Teacher/TeacherCabinetPage"))
 
 function PageFallback() {
   return <p className="px-4 py-12 text-center text-muted-foreground">Загрузка…</p>
@@ -46,6 +51,34 @@ function AppRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/" element={<HomePage />} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute
+                isAuthenticated={isAuthenticated}
+                isCheckingAuth={isCheckingAuth}
+                user={user}
+                allowedRoles={["student", "teacher", "admin"]}
+              >
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute
+                isAuthenticated={isAuthenticated}
+                isCheckingAuth={isCheckingAuth}
+                user={user}
+                allowedRoles={["student", "teacher", "admin"]}
+              >
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/learn/:language" element={<LearnTrackPage />} />
+          <Route path="/learn/:language/:conceptId" element={<CollectionShowcasePage />} />
           <Route path="/tasks/:id" element={<TaskPageRoute />} />
           <Route
             path="/groups/join"
@@ -70,6 +103,19 @@ function AppRoutes() {
                 allowedRoles={["student", "teacher", "admin"]}
               >
                 <StudentAssignmentSetsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/cabinet"
+            element={
+              <ProtectedRoute
+                isAuthenticated={isAuthenticated}
+                isCheckingAuth={isCheckingAuth}
+                user={user}
+                allowedRoles={["teacher", "admin"]}
+              >
+                <TeacherCabinetPage />
               </ProtectedRoute>
             }
           />

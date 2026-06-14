@@ -30,9 +30,11 @@ export default function CodeEditor({
   readOnly = false,
   height = "420px",
 }: CodeEditorProps) {
+  const fillHeight = height === "100%"
+
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      <Suspense fallback={<MonacoFallback height={height} />}>
+    <div className={fillHeight ? "h-full overflow-hidden rounded-lg border border-border" : "overflow-hidden rounded-lg border border-border"}>
+      <Suspense fallback={<MonacoFallback height={fillHeight ? "100%" : height} />}>
         <LazyMonacoEditor
           height={height}
           language={language}

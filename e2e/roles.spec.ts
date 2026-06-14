@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures/playwright"
 import { DEV_USERS } from "./fixtures"
-import { loginAs } from "./helpers"
+import { loginAs, solveFixTask2Age } from "./helpers"
 
 test("teacher can validate and create curriculum link", async ({ page }) => {
   await loginAs(page, DEV_USERS.teacher.email, DEV_USERS.teacher.password)
@@ -36,10 +36,8 @@ test("student submission updates task progress", async ({ page }) => {
   await loginAs(page, DEV_USERS.student.email, DEV_USERS.student.password)
 
   await page.goto("/tasks/2")
-  await expect(page.getByRole("heading", { name: "Упорядочить вывод" })).toBeVisible()
-  await page.getByTestId("block-move-down-0").click()
-  await page.getByTestId("task-check-btn").click()
-  await expect(page.getByTestId("result-success-badge")).toHaveText("Успех")
+  await expect(page.getByRole("heading", { name: "Сохранить возраст" })).toBeVisible()
+  await solveFixTask2Age(page)
 
   await expect(page.getByTestId("task-progress")).toBeVisible()
   await expect(page.getByTestId("task-progress")).toContainText("Решено")

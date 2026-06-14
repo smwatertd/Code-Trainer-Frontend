@@ -8,9 +8,9 @@ import {
 import ApiErrorAlert from "@/shared/ui/ApiErrorAlert"
 import { Alert, AlertDescription } from "@/shared/ui/alert"
 import { Button } from "@/shared/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { Input } from "@/shared/ui/input"
 import { Label } from "@/shared/ui/label"
+import ShellPage from "@/shared/ui/ShellPage"
 import { showError, showSuccess } from "@/shared/utils/toast"
 
 export default function TeacherGroupsPage() {
@@ -47,38 +47,34 @@ export default function TeacherGroupsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Группы</h1>
-        <p className="text-sm text-muted-foreground">Создайте группу и выдайте студентам код приглашения</p>
+    <ShellPage
+      title="Группы"
+      subtitle="Создайте группу и выдайте студентам код приглашения"
+    >
+      <div className="grid gap-[18px]">
+      <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
+        <b className="mb-4 block text-[15px]">Новая группа</b>
+        <form className="flex flex-wrap gap-3" onSubmit={onCreate}>
+          <div className="min-w-[220px] flex-1 space-y-2">
+            <Label htmlFor="group-name">Название</Label>
+            <Input
+              id="group-name"
+              data-testid="group-name-input"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="ИТ-301"
+              className="h-[42px] border-[#333d4f] bg-bg-2"
+              required
+            />
+          </div>
+          <div className="flex items-end">
+            <Button type="submit" disabled={createMutation.isPending} data-testid="group-create-btn">
+              {createMutation.isPending ? "Создание…" : "Создать"}
+            </Button>
+          </div>
+        </form>
+        {formError ? <ApiErrorAlert error={formError} className="mt-4" /> : null}
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Новая группа</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="flex flex-wrap gap-3" onSubmit={onCreate}>
-            <div className="min-w-[220px] flex-1 space-y-2">
-              <Label htmlFor="group-name">Название</Label>
-              <Input
-                id="group-name"
-                data-testid="group-name-input"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="ИТ-301"
-                required
-              />
-            </div>
-            <div className="flex items-end">
-              <Button type="submit" disabled={createMutation.isPending} data-testid="group-create-btn">
-                {createMutation.isPending ? "Создание…" : "Создать"}
-              </Button>
-            </div>
-          </form>
-          {formError ? <ApiErrorAlert error={formError} className="mt-4" /> : null}
-        </CardContent>
-      </Card>
 
       {inviteCode ? (
         <Alert data-testid="invite-code-alert">
@@ -88,25 +84,23 @@ export default function TeacherGroupsPage() {
         </Alert>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Мои группы</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
+        <b className="mb-4 block text-[15px]">Мои группы</b>
+        <div className="space-y-3">
           {groupsQuery.isLoading ? (
-            <p className="text-sm text-muted-foreground">Загрузка…</p>
+            <p className="text-sm text-ink-muted">Загрузка…</p>
           ) : !groupsQuery.data?.length ? (
-            <p className="text-sm text-muted-foreground">Групп пока нет</p>
+            <p className="text-sm text-ink-muted">Групп пока нет</p>
           ) : (
             groupsQuery.data.map((group) => (
               <div
                 key={group.id}
                 data-testid={`teacher-group-${group.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 p-3"
               >
                 <div>
                   <p className="font-medium">{group.name}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-ink-muted">
                     Участников: {group.member_count ?? 0}
                   </p>
                 </div>
@@ -132,8 +126,9 @@ export default function TeacherGroupsPage() {
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+      </div>
+    </ShellPage>
   )
 }

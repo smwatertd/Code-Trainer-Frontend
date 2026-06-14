@@ -237,7 +237,7 @@ const PRIMARY_ERROR_LINE = new RegExp(
 )
 const PRIMARY_JAVA_ERROR = new RegExp(String.raw`^${SOLUTION_PATH}:\d+:\s*error:`, "i")
 const PRIMARY_PASCAL_ERROR =
-  /^(?:(?:.*\/)?(?:solution|source)\.pas|код)\(\d+(?:,\d+)?\)\s*(?:Fatal:\s*)?Error:/i
+  /^(?:(?:.*\/)?(?:solution|source)\.pas|код)\(\d+(?:,\d+)?\)\s*(?:Fatal:|Error:)/i
 const PRIMARY_PYTHON_ERROR = /^File ".*?solution\.py", line \d+/i
 const PRIMARY_PYTHON_EXCEPTION = /^(SyntaxError|IndentationError|NameError|TypeError|ValueError):/i
 
@@ -327,14 +327,14 @@ function parseCompilerPrimary(line: string): ParsedCompilerError | null {
   }
 
   const pascalMatch = line.match(
-    /^(?:код|(?:solution|source)\.pas)\((\d+)(?:,(\d+))?\)\s*(?:Fatal:\s*)?Error:\s*(.+)$/i,
+    /^(?:код|(?:(?:.*\/)?(?:solution|source)\.pas))\((\d+)(?:,(\d+))?\)\s*(?:Fatal:\s*|Error:\s*)(.+)$/i,
   )
   if (pascalMatch) {
     return { line: pascalMatch[1], column: pascalMatch[2], message: pascalMatch[3] }
   }
 
   const pascalRawMatch = line.match(
-    /^(?:(?:.*\/)?(?:solution|source)\.pas)\((\d+)(?:,(\d+))?\)\s*(?:Fatal:\s*)?Error:\s*(.+)$/i,
+    /^(?:(?:.*\/)?(?:solution|source)\.pas)\((\d+)(?:,(\d+))?\)\s*(?:Fatal:\s*|Error:\s*)(.+)$/i,
   )
   if (pascalRawMatch) {
     return { line: pascalRawMatch[1], column: pascalRawMatch[2], message: pascalRawMatch[3] }
@@ -501,7 +501,7 @@ function formatStructuredIssue(item: ExecutionIssueLike): FormattedExecutionIssu
     return { summary: knownMessage }
   }
 
-  if (type === "LINTER") {
+  if (type === "LINTER" || type === "LINT") {
     const formatted = humanizeDiagnosticLine(raw)
     if (formatted !== sanitizeExecutionPaths(raw)) {
       return { summary: formatted }

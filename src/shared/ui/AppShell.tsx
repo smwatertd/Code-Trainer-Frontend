@@ -1,12 +1,8 @@
-import { Link } from "react-router-dom"
+import { useLocation } from "react-router-dom"
 import type { ReactNode } from "react"
 import type { CurrentUser } from "@/shared/types/api"
-import {
-  canAccessAdminWorkspace,
-  canAccessTeacherWorkspace,
-} from "@/shared/types/user"
-import { labelUserRole } from "@/shared/utils/labels"
-import { Button } from "@/shared/ui/button"
+import AppSidebar from "@/shared/ui/AppSidebar"
+import AppTopbar from "@/shared/ui/AppTopbar"
 
 type AppShellProps = {
   children: ReactNode
@@ -14,79 +10,59 @@ type AppShellProps = {
   onLogout: () => void
 }
 
+const AUTH_PATHS = new Set(["/login", "/register"])
+
+function usePageMeta(pathname: string): { crumbHome?: string; crumbCurrent: string } {
+  if (pathname === "/") return { crumbHome: "Практика кода", crumbCurrent: "Список задач" }
+  if (pathname === "/profile") return { crumbHome: "Практика кода", crumbCurrent: "Профиль" }
+  if (pathname === "/settings") return { crumbHome: "Практика кода", crumbCurrent: "Настройки" }
+  if (pathname.startsWith("/learn/")) {
+    const parts = pathname.split("/").filter(Boolean)
+    if (parts.length >= 3) {
+      return { crumbHome: "Практика кода", crumbCurrent: "Сборник" }
+    }
+    return { crumbHome: "Практика кода", crumbCurrent: "Учебные треки" }
+  }
+  if (pathname.startsWith("/assignment-sets")) return { crumbHome: "Практика кода", crumbCurrent: "Наборы" }
+  if (pathname.startsWith("/groups/join")) return { crumbHome: "Практика кода", crumbCurrent: "Мои группы" }
+  if (pathname === "/teacher/cabinet")
+    return { crumbHome: "Преподаватель", crumbCurrent: "Кабинет" }
+  if (pathname.startsWith("/teacher/groups")) return { crumbHome: "Преподаватель", crumbCurrent: "Группы" }
+  if (pathname.startsWith("/teacher/assignment-sets"))
+    return { crumbHome: "Преподаватель", crumbCurrent: "Наборы" }
+  if (pathname.startsWith("/teacher/tasks/library"))
+    return { crumbHome: "Преподаватель", crumbCurrent: "Библиотека" }
+  if (pathname.startsWith("/admin")) return { crumbHome: "Админ", crumbCurrent: "Curriculum" }
+  return { crumbCurrent: "Практика кода" }
+}
+
 export default function AppShell({ children, user, onLogout }: AppShellProps) {
-  const isTeacher = canAccessTeacherWorkspace(user)
-  const isAdmin = canAccessAdminWorkspace(user)
+  const { pathname } = useLocation()
+  const isAuthPage = AUTH_PATHS.has(pathname)
+  const isTaskPage = pathname.startsWith("/tasks/")
+
+  if (isAuthPage || isTaskPage) {
+    return <>{children}</>
+  }
+
+  const meta = usePageMeta(pathname)
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card/80 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="font-semibold">
-              Code Trainer
-            </Link>
-            <nav className="hidden items-center gap-3 text-sm text-muted-foreground sm:flex">
-              <Link to="/" className="hover:text-foreground">
-                Задачи
-              </Link>
-              {isTeacher ? (
-                <>
-                  <Link to="/teacher/groups" className="hover:text-foreground">
-                    Группы
-                  </Link>
-                  <Link to="/teacher/assignment-sets" className="hover:text-foreground">
-                    Наборы
-                  </Link>
-                  <Link to="/teacher/tasks/library" className="hover:text-foreground">
-                    Библиотека
-                  </Link>
-                  <Link to="/teacher/tasks/4/curriculum" className="hover:text-foreground">
-                    Учебный план
-                  </Link>
-                </>
-              ) : null}
-              {user && !isTeacher ? (
-                <>
-                  <Link to="/assignment-sets" className="hover:text-foreground">
-                    Наборы
-                  </Link>
-                  <Link to="/groups/join" className="hover:text-foreground">
-                    Группы
-                  </Link>
-                </>
-              ) : null}
-              {isAdmin ? (
-                <Link to="/admin/curriculum/python" className="hover:text-foreground">
-                  Админ
-                </Link>
-              ) : null}
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            {user ? (
-              <>
-                <span className="hidden text-sm text-muted-foreground sm:inline" data-testid="user-info">
-                  {user.name} · {labelUserRole(user.role)}
-                </span>
-                <Button variant="ghost" size="sm" onClick={onLogout} data-testid="logout-btn">
-                  Выйти
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login">Войти</Link>
-                </Button>
-                <Button size="sm" asChild>
-                  <Link to="/register">Регистрация</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-      <main>{children}</main>
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[230px_1fr]">
+      <div className="hidden lg:block">
+        <AppSidebar user={user} onLogout={onLogout} />
+      </div>
+      <div className="min-w-0">
+        <AppTopbar
+          user={user}
+          onLogout={onLogout}
+          crumbHome={meta.crumbHome}
+          crumbCurrent={meta.crumbCurrent}
+        />
+        <main className="px-7">
+          <div className="mx-auto max-w-[1320px]">{children}</div>
+        </main>
+      </div>
     </div>
   )
 }

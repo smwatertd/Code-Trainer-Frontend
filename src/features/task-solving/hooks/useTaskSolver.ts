@@ -15,9 +15,18 @@ import { getSubmission, submitSubmission } from "@/shared/api/submissionsClient"
 import { queryKeys } from "@/shared/config/queryKeys"
 import { useJobPoll } from "@/shared/hooks/useJobPoll"
 import type { CheckResult, FlowPayload } from "@/shared/types/api"
+import {
+  canSwapParallelLanguages,
+  getKnownLanguages,
+  getLearningLanguages,
+  getReferenceCode,
+  getWriteTaskReferenceText,
+  resolveKnownLanguage,
+  resolveLearningLanguage,
+} from "@/features/task-solving/model/studentUiUtils"
 import { getFlowchartReferenceCode } from "@/features/task-solving/model/flowchartReferenceCode"
 import { useLanguages } from "@/features/languages/hooks/useLanguages"
-import { isBlockReorderTask, isCodeToFlowchartTask, isFlowchartTask, resolveSolverLanguage, selectableLanguages } from "@/shared/utils/taskTypes"
+import { isBlockReorderTask, isCodeToFlowchartTask, isFlowchartTask } from "@/shared/utils/taskTypes"
 import { getApiErrorMessage } from "@/shared/utils/apiErrors"
 import { showError } from "@/shared/utils/toast"
 
@@ -38,6 +47,7 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
 
   const [code, setCode] = useState("")
   const [language, setLanguage] = useState("python")
+  const [knownLanguage, setKnownLanguage] = useState("python")
   const [blockOrder, setBlockOrder] = useState<number[]>([])
   const [flow, setFlow] = useState<FlowPayload>({ flow: [], nodes: [], edges: [] })
   const [jobId, setJobId] = useState<string | number | null>(null)
@@ -53,7 +63,10 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
     }
 
     const initial = createInitialSolverState(task, availableLanguageIds)
-    setLanguage(initial.language)
+    const known = resolveKnownLanguage(task)
+    const learning = resolveLearningLanguage(task, known, initial.language, availableLanguageIds)
+    setKnownLanguage(known)
+    setLanguage(learning)
     setBlockOrder(initial.blockOrder)
     setFlow(initial.flow)
     if (isBlockReorderTask(task)) {
@@ -70,12 +83,26 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
 
   useEffect(() => {
     if (!task) return
-    const ids = selectableLanguages(task, languages).map((item) => item.id)
-    const resolved = resolveSolverLanguage(task, language, ids)
-    if (resolved !== language) {
+    const serverIds = languages.map((item) => item.id)
+    const learningAvailable = getLearningLanguages(task, serverIds)
+    const resolved = resolveLearningLanguage(task, knownLanguage, language, serverIds)
+    if (resolved !== language && learningAvailable.includes(resolved)) {
       setLanguage(resolved)
     }
-  }, [language, languages, task])
+  }, [knownLanguage, language, languages, task])
+
+  const knownLanguages = useMemo(() => getKnownLanguages(task), [task])
+  const learningLanguages = useMemo(
+    () => getLearningLanguages(task, availableLanguageIds),
+    [availableLanguageIds, task],
+  )
+
+  const referenceCode = useMemo(() => {
+    if (!task) return ""
+    const fromExamples = getReferenceCode(task, knownLanguage)
+    if (fromExamples) return fromExamples
+    return getWriteTaskReferenceText(task) ?? ""
+  }, [knownLanguage, task])
 
   const fetchResult = useCallback(async () => {
     if (jobId == null) throw new Error("job id missing")
@@ -124,6 +151,36 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
     }
     return code
   }, [blockOrder, code, language, task])
+
+  const updateKnownLanguage = useCallback(
+    (nextKnownLanguage: string) => {
+      setKnownLanguage(nextKnownLanguage)
+      if (!task) return
+      const learning = resolveLearningLanguage(task, nextKnownLanguage, language, availableLanguageIds)
+      if (learning !== language) {
+        setLanguage(learning)
+      }
+    },
+    [availableLanguageIds, language, task],
+  )
+
+  const swapLanguages = useCallback(() => {
+    if (
+      !task ||
+      !canSwapParallelLanguages(knownLanguage, language, knownLanguages, learningLanguages)
+    ) {
+      return
+    }
+    const nextKnown = language
+    const nextLearning = knownLanguage
+    setKnownLanguage(nextKnown)
+    setLanguage(nextLearning)
+    if (isBlockReorderTask(task)) {
+      setCode(buildCodeFromBlocks(getTaskBlocks(task, nextLearning), blockOrder, nextLearning))
+    } else if (isCodeToFlowchartTask(task)) {
+      setCode(getFlowchartReferenceCode(task, nextLearning))
+    }
+  }, [blockOrder, knownLanguage, knownLanguages, language, learningLanguages, task])
 
   const updateLanguage = useCallback(
     (nextLanguage: string) => {
@@ -218,6 +275,12 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
     setCode,
     language,
     setLanguage: updateLanguage,
+    knownLanguage,
+    setKnownLanguage: updateKnownLanguage,
+    knownLanguages,
+    learningLanguages,
+    referenceCode,
+    swapLanguages,
     blockOrder,
     setBlockOrder: updateBlockOrder,
     flow,

@@ -75,6 +75,7 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "ui-monospace", "monospace"],
+        serif: ['"Instrument Serif"', "Georgia", "serif"],
       },
       boxShadow: {
         card: "0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8)",

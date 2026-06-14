@@ -98,6 +98,18 @@ describe("formatExecutionIssue", () => {
     expect(issues[1]?.summary).toBe("Строка 4, колонка 42: «endl» не является членом std")
   })
 
+  it("formats pascal fatal syntax errors", () => {
+    const issues = formatExecutionIssues([
+      {
+        type: "COMPILER",
+        text: 'source.pas(9) Fatal: Syntax error, "." expected but "end of file" found',
+      },
+    ])
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.summary).toBe('Строка 9: ожидалось «.», но найдено «end of file»')
+  })
+
   it("formats pascal compiler diagnostics with line and column", () => {
     const issues = formatExecutionIssues([
       { type: "COMPILER", text: "Free Pascal Compiler version 3.2.2 for aarch64" },

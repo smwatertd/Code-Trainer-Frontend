@@ -96,9 +96,7 @@ export function createInitialSolverState(
     code:
       task && isCodeToFlowchartTask(task)
         ? getFlowchartReferenceCode(task, language)
-        : task && isTranslationTask(task)
-          ? ""
-          : String(task?.payload.template ?? ""),
+        : String(task?.payload.template ?? ""),
     blockOrder: initialBlockOrder(blocks),
     flow: { flow: [], nodes: [], edges: [] },
   }

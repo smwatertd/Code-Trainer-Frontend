@@ -21,6 +21,11 @@ function localizeApiErrorMessage(message: string): string {
 
 export function getApiErrorMessage(error: unknown, fallback = "Что-то пошло не так"): string {
   if (axios.isAxiosError(error)) {
+    if (!error.response) {
+      if (error.code === "ERR_NETWORK" || error.message === "Network Error") {
+        return "API недоступен. Запустите backend: cd fixed && make dev && make seed-dev"
+      }
+    }
     const body = error.response?.data as ApiErrorBody | undefined
     if (body?.error?.message) return localizeApiErrorMessage(body.error.message)
     if (error.message) return localizeApiErrorMessage(error.message)

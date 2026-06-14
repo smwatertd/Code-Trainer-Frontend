@@ -8,6 +8,9 @@ export const queryKeys = {
   taskProgress: (id: number) => ["progress", "tasks", id] as const,
   learningConceptProgress: (language: string, conceptId: string) =>
     ["progress", "curriculum", language, conceptId] as const,
+  languageTrack: (language: string) => ["curriculum", language, "track"] as const,
+  collectionShowcase: (language: string, conceptId: string) =>
+    ["curriculum", language, "showcase", conceptId] as const,
   curriculumLinks: (taskId: number) => ["curriculum", "tasks", taskId, "links"] as const,
   curriculumValidate: (language: string) => ["curriculum", language, "validate"] as const,
   curriculumDebug: (language: string) => ["curriculum", language, "debug"] as const,

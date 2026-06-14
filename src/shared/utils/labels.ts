@@ -43,6 +43,11 @@ export const LEARNING_CONCEPT_LABELS: Record<string, string> = {
 }
 
 export const TECHNICAL_CONCEPT_LABELS: Record<string, string> = {
+  program_entry: "Точка входа программы",
+  typed_declaration: "Объявление переменной",
+  assignment: "Присваивание",
+  arithmetic_ops: "Арифметические операции",
+  stdout_write: "Вывод в консоль",
   for_loop: "Цикл for",
   while_loop: "Цикл while",
   if_else: "Условие if / elif / else",

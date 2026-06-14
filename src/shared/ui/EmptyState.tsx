@@ -1,5 +1,4 @@
 import type { ReactNode } from "react"
-import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/shared/lib/utils"
 
 type EmptyStateProps = {
@@ -7,18 +6,24 @@ type EmptyStateProps = {
   description?: string
   action?: ReactNode
   className?: string
+  icon?: string
 }
 
-export default function EmptyState({ title, description, action, className }: EmptyStateProps) {
+export default function EmptyState({
+  title,
+  description,
+  action,
+  className,
+  icon = "⌕",
+}: EmptyStateProps) {
   return (
-    <Card className={cn("border-dashed bg-card/60", className)}>
-      <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        {description ? (
-          <p className="max-w-md text-sm text-muted-foreground">{description}</p>
-        ) : null}
-        {action}
-      </CardContent>
-    </Card>
+    <div className={cn("tp-empty rounded-lg border border-dashed border-[#333d4f] bg-surface/60", className)}>
+      <div className="ill">{icon}</div>
+      <b className="text-base">{title}</b>
+      {description ? (
+        <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">{description}</p>
+      ) : null}
+      {action ? <div className="mt-4">{action}</div> : null}
+    </div>
   )
 }
