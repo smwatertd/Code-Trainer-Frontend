@@ -2,7 +2,7 @@
 
 Nginx отдаёт статику и проксирует `/api` на backend (`127.0.0.1:8000` на хосте).
 
-**Сначала** поднимите backend — см. `Code-Trainer-Backend/DEPLOY.md`.
+**Сначала** поднимите backend — см. `Code-Trainer-Backend/DEPLOY.md` (создаст сеть `code-trainer-net`).
 
 ## Установка
 

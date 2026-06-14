@@ -11,6 +11,11 @@ services:
       - "443:443"
     volumes:
       - ./deploy/ssl:/etc/nginx/ssl:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: unless-stopped
+    networks:
+      - code-trainer-net
+
+networks:
+  code-trainer-net:
+    name: code-trainer-net
+    external: true
