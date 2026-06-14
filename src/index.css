@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 27% 6%;
+    --foreground: 210 20% 95%;
+    --card: 220 24% 11%;
+    --card-foreground: 210 20% 95%;
+    --popover: 220 24% 11%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 84 100% 50%;
+    --primary-foreground: 220 27% 6%;
+    --secondary: 263 99% 66%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 220 18% 16%;
+    --muted-foreground: 215 14% 65%;
+    --accent: 220 18% 16%;
+    --accent-foreground: 210 20% 95%;
+    --destructive: 349 100% 65%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 220 18% 19%;
+    --input: 220 18% 19%;
+    --ring: 84 100% 50%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(900px 500px at 12% -5%, rgba(142, 255, 1, 0.06), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(139, 83, 254, 0.08), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: #8eff01;
+    color: #0a0e15;
+  }
+}
+
+.react-flow__controls.flowchart-controls {
+  box-shadow: none;
+}
+
+.react-flow__controls.flowchart-controls .react-flow__controls-button {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+  fill: hsl(var(--foreground));
+}
+
+.react-flow__controls.flowchart-controls .react-flow__controls-button:hover {
+  background: hsl(var(--accent));
+}
+
+.react-flow__minimap.flowchart-minimap {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.react-flow__minimap.flowchart-minimap svg {
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+@layer utilities {
+  .app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+
+  .app-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background-color: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.55);
+  }
+}

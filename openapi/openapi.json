@@ -1,0 +1,2247 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Code Trainer API",
+        "description": "Educational platform for comparing programming languages",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/health": {
+            "get": {
+                "tags": [
+                    "health"
+                ],
+                "summary": "Liveness Check",
+                "operationId": "liveness_check_api_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivenessStatus"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/health/ready": {
+            "get": {
+                "tags": [
+                    "health"
+                ],
+                "summary": "Readiness Check",
+                "operationId": "readiness_check_api_health_ready_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/languages": {
+            "get": {
+                "tags": [
+                    "languages"
+                ],
+                "summary": "List Languages",
+                "operationId": "list_languages_api_languages_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/LanguageResponse"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List Languages Api Languages Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/catalog/tasks": {
+            "get": {
+                "tags": [
+                    "catalog"
+                ],
+                "summary": "List Public Tasks",
+                "operationId": "list_public_tasks_api_catalog_tasks_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/TaskSummaryResponse"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List Public Tasks Api Catalog Tasks Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/catalog/tasks/{task_id}": {
+            "get": {
+                "tags": [
+                    "catalog"
+                ],
+                "summary": "Get Public Task",
+                "operationId": "get_public_task_api_catalog_tasks__task_id__get",
+                "parameters": [
+                    {
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Task Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskDetailResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/demo/check": {
+            "post": {
+                "tags": [
+                    "demo"
+                ],
+                "summary": "Submit Demo Check",
+                "operationId": "submit_demo_check_api_demo_check_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DemoCheckRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DemoCheckQueuedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/demo/check/{job_id}": {
+            "get": {
+                "tags": [
+                    "demo"
+                ],
+                "summary": "Get Demo Check Result",
+                "operationId": "get_demo_check_result_api_demo_check__job_id__get",
+                "parameters": [
+                    {
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Job Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DemoCheckResultResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login",
+                "operationId": "login_api_auth_login_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/register": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register",
+                "operationId": "register_api_auth_register_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh Tokens",
+                "operationId": "refresh_tokens_api_auth_refresh_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefreshRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout",
+                "operationId": "logout_api_auth_logout_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefreshRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/me": {
+            "get": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get Me",
+                "operationId": "get_me_api_auth_me_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentUserResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/submissions/pending/latest": {
+            "get": {
+                "tags": [
+                    "submissions"
+                ],
+                "summary": "Get Latest Pending Submission",
+                "operationId": "get_latest_pending_submission_api_submissions_pending_latest_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "task_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "title": "Task Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SubmissionResponse"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "title": "Response Get Latest Pending Submission Api Submissions Pending Latest Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/submissions": {
+            "post": {
+                "tags": [
+                    "submissions"
+                ],
+                "summary": "Submit Submission",
+                "operationId": "submit_submission_api_submissions_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SubmissionCreateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubmissionQueuedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/submissions/{submission_id}/abandon": {
+            "post": {
+                "tags": [
+                    "submissions"
+                ],
+                "summary": "Abandon Submission",
+                "operationId": "abandon_submission_api_submissions__submission_id__abandon_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "submission_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Submission Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubmissionAbandonedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/submissions/{submission_id}": {
+            "get": {
+                "tags": [
+                    "submissions"
+                ],
+                "summary": "Get Submission",
+                "operationId": "get_submission_api_submissions__submission_id__get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "submission_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Submission Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubmissionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/progress/tasks/{task_id}": {
+            "get": {
+                "tags": [
+                    "progress"
+                ],
+                "summary": "Get Task Progress",
+                "operationId": "get_task_progress_api_progress_tasks__task_id__get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Task Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskProgressResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/progress/curriculum/{language}/{learning_concept_id}": {
+            "get": {
+                "tags": [
+                    "progress"
+                ],
+                "summary": "Get Learning Concept Progress",
+                "operationId": "get_learning_concept_progress_api_progress_curriculum__language___learning_concept_id__get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "language",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Language"
+                        }
+                    },
+                    {
+                        "name": "learning_concept_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Learning Concept Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LearningConceptProgressResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/curriculum/tasks/validate-link": {
+            "post": {
+                "tags": [
+                    "curriculum"
+                ],
+                "summary": "Validate Task Curriculum Link",
+                "operationId": "validate_task_curriculum_link_api_curriculum_tasks_validate_link_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TaskCurriculumLinkValidateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskCurriculumLinkValidateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/curriculum/tasks/{task_id}/links": {
+            "get": {
+                "tags": [
+                    "curriculum"
+                ],
+                "summary": "Get Task Curriculum Links",
+                "operationId": "get_task_curriculum_links_api_curriculum_tasks__task_id__links_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Task Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskCurriculumMetadataResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "curriculum"
+                ],
+                "summary": "Create Task Curriculum Link",
+                "operationId": "create_task_curriculum_link_api_curriculum_tasks__task_id__links_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Task Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TaskCurriculumLinkCreateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskCurriculumLinkResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/curriculum/tasks/{task_id}/links/{link_id}": {
+            "patch": {
+                "tags": [
+                    "curriculum"
+                ],
+                "summary": "Update Task Curriculum Link",
+                "operationId": "update_task_curriculum_link_api_curriculum_tasks__task_id__links__link_id__patch",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Task Id"
+                        }
+                    },
+                    {
+                        "name": "link_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Link Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TaskCurriculumLinkUpdateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskCurriculumLinkResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "curriculum"
+                ],
+                "summary": "Delete Task Curriculum Link",
+                "operationId": "delete_task_curriculum_link_api_curriculum_tasks__task_id__links__link_id__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Task Id"
+                        }
+                    },
+                    {
+                        "name": "link_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Link Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/curriculum/{language}/validate": {
+            "get": {
+                "tags": [
+                    "curriculum"
+                ],
+                "summary": "Validate Curriculum",
+                "operationId": "validate_curriculum_api_curriculum__language__validate_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "language",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Language"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurriculumValidationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/curriculum/{language}/debug": {
+            "get": {
+                "tags": [
+                    "curriculum"
+                ],
+                "summary": "Get Curriculum Debug",
+                "operationId": "get_curriculum_debug_api_curriculum__language__debug_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "language",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Language"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurriculumDebugResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AuthResponse": {
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "title": "Access Token"
+                    },
+                    "refresh_token": {
+                        "type": "string",
+                        "title": "Refresh Token"
+                    },
+                    "token_type": {
+                        "type": "string",
+                        "title": "Token Type",
+                        "default": "bearer"
+                    },
+                    "expires_in": {
+                        "type": "integer",
+                        "title": "Expires In"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "access_token",
+                    "refresh_token",
+                    "expires_in"
+                ],
+                "title": "AuthResponse"
+            },
+            "CurrentUserResponse": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "email": {
+                        "type": "string",
+                        "title": "Email"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "role": {
+                        "type": "string",
+                        "title": "Role"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "email",
+                    "name",
+                    "role"
+                ],
+                "title": "CurrentUserResponse"
+            },
+            "CurriculumDebugResponse": {
+                "properties": {
+                    "summary": {
+                        "additionalProperties": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "type": "object",
+                        "title": "Summary"
+                    },
+                    "validation": {
+                        "$ref": "#/components/schemas/CurriculumValidationResponse"
+                    },
+                    "chapters": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Chapters"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "summary",
+                    "validation",
+                    "chapters"
+                ],
+                "title": "CurriculumDebugResponse"
+            },
+            "CurriculumValidationResponse": {
+                "properties": {
+                    "language": {
+                        "type": "string",
+                        "title": "Language"
+                    },
+                    "valid": {
+                        "type": "boolean",
+                        "title": "Valid"
+                    },
+                    "errors": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Errors"
+                    },
+                    "stats": {
+                        "additionalProperties": {
+                            "type": "integer"
+                        },
+                        "type": "object",
+                        "title": "Stats"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "language",
+                    "valid",
+                    "stats"
+                ],
+                "title": "CurriculumValidationResponse"
+            },
+            "DemoCheckQueuedResponse": {
+                "properties": {
+                    "job_id": {
+                        "type": "string",
+                        "title": "Job Id"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "job_id",
+                    "status"
+                ],
+                "title": "DemoCheckQueuedResponse"
+            },
+            "DemoCheckRequest": {
+                "properties": {
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    },
+                    "language": {
+                        "type": "string",
+                        "title": "Language"
+                    },
+                    "code": {
+                        "type": "string",
+                        "maxLength": 50000,
+                        "minLength": 1,
+                        "title": "Code"
+                    },
+                    "block_order": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Block Order"
+                    },
+                    "nodes": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Nodes"
+                    },
+                    "edges": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Edges"
+                    },
+                    "flow": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Flow"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "task_id",
+                    "language",
+                    "code"
+                ],
+                "title": "DemoCheckRequest"
+            },
+            "DemoCheckResultResponse": {
+                "properties": {
+                    "job_id": {
+                        "type": "string",
+                        "title": "Job Id"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "success": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Success"
+                    },
+                    "compiler_errors": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Compiler Errors"
+                    },
+                    "linter_errors": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Linter Errors"
+                    },
+                    "pattern_errors": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Pattern Errors"
+                    },
+                    "test_results": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Test Results"
+                    },
+                    "errors": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Errors"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "job_id",
+                    "status"
+                ],
+                "title": "DemoCheckResultResponse"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "LanguageResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "label": {
+                        "type": "string",
+                        "title": "Label"
+                    },
+                    "file_extension": {
+                        "type": "string",
+                        "title": "File Extension"
+                    },
+                    "monaco_language": {
+                        "type": "string",
+                        "title": "Monaco Language"
+                    },
+                    "supported_features": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Supported Features"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "label",
+                    "file_extension",
+                    "monaco_language"
+                ],
+                "title": "LanguageResponse"
+            },
+            "LearningConceptProgressResponse": {
+                "properties": {
+                    "language": {
+                        "type": "string",
+                        "title": "Language"
+                    },
+                    "learning_concept_id": {
+                        "type": "string",
+                        "title": "Learning Concept Id"
+                    },
+                    "total_tasks": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Total Tasks"
+                    },
+                    "passed_tasks": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Passed Tasks"
+                    },
+                    "progress_percent": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "title": "Progress Percent"
+                    },
+                    "by_technical_concept": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/TechnicalConceptProgressResponse"
+                        },
+                        "type": "object",
+                        "title": "By Technical Concept"
+                    },
+                    "by_task_id": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/TaskCurriculumProgressItemResponse"
+                        },
+                        "type": "object",
+                        "title": "By Task Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "language",
+                    "learning_concept_id",
+                    "total_tasks",
+                    "passed_tasks",
+                    "progress_percent",
+                    "by_technical_concept",
+                    "by_task_id"
+                ],
+                "title": "LearningConceptProgressResponse"
+            },
+            "LivenessStatus": {
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "const": "ok",
+                        "title": "Status",
+                        "default": "ok"
+                    }
+                },
+                "type": "object",
+                "title": "LivenessStatus"
+            },
+            "LoginRequest": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "title": "Password"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "title": "LoginRequest"
+            },
+            "RefreshRequest": {
+                "properties": {
+                    "refresh_token": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Refresh Token"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "refresh_token"
+                ],
+                "title": "RefreshRequest"
+            },
+            "RegisterRequest": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "title": "Name"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 8,
+                        "title": "Password"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "email",
+                    "password"
+                ],
+                "title": "RegisterRequest"
+            },
+            "SubmissionAbandonedResponse": {
+                "properties": {
+                    "released": {
+                        "type": "boolean",
+                        "title": "Released"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "released",
+                    "status"
+                ],
+                "title": "SubmissionAbandonedResponse"
+            },
+            "SubmissionCreateRequest": {
+                "properties": {
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    },
+                    "language": {
+                        "type": "string",
+                        "title": "Language"
+                    },
+                    "code": {
+                        "type": "string",
+                        "maxLength": 50000,
+                        "minLength": 1,
+                        "title": "Code"
+                    },
+                    "block_order": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Block Order"
+                    },
+                    "nodes": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Nodes"
+                    },
+                    "edges": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Edges"
+                    },
+                    "flow": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Flow"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "task_id",
+                    "language",
+                    "code"
+                ],
+                "title": "SubmissionCreateRequest"
+            },
+            "SubmissionQueuedResponse": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "status"
+                ],
+                "title": "SubmissionQueuedResponse"
+            },
+            "SubmissionResponse": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "user_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "User Id"
+                    },
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    },
+                    "language": {
+                        "type": "string",
+                        "title": "Language"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "success": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Success"
+                    },
+                    "created_at": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Created At"
+                    },
+                    "updated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Updated At"
+                    },
+                    "compiler_errors": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Compiler Errors"
+                    },
+                    "linter_errors": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Linter Errors"
+                    },
+                    "pattern_errors": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Pattern Errors"
+                    },
+                    "test_results": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Test Results"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "user_id",
+                    "task_id",
+                    "language",
+                    "status"
+                ],
+                "title": "SubmissionResponse"
+            },
+            "TaskCurriculumLinkCreateRequest": {
+                "properties": {
+                    "language": {
+                        "type": "string",
+                        "title": "Language",
+                        "default": "python"
+                    },
+                    "technical_concept_id": {
+                        "type": "string",
+                        "title": "Technical Concept Id"
+                    },
+                    "exercise_pattern_id": {
+                        "type": "string",
+                        "title": "Exercise Pattern Id"
+                    },
+                    "is_primary": {
+                        "type": "boolean",
+                        "title": "Is Primary",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "technical_concept_id",
+                    "exercise_pattern_id"
+                ],
+                "title": "TaskCurriculumLinkCreateRequest"
+            },
+            "TaskCurriculumLinkResponse": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    },
+                    "language": {
+                        "type": "string",
+                        "title": "Language"
+                    },
+                    "learning_concept_id": {
+                        "type": "string",
+                        "title": "Learning Concept Id"
+                    },
+                    "technical_concept_id": {
+                        "type": "string",
+                        "title": "Technical Concept Id"
+                    },
+                    "exercise_pattern_id": {
+                        "type": "string",
+                        "title": "Exercise Pattern Id"
+                    },
+                    "action": {
+                        "type": "string",
+                        "title": "Action"
+                    },
+                    "is_primary": {
+                        "type": "boolean",
+                        "title": "Is Primary"
+                    },
+                    "created_at": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "task_id",
+                    "language",
+                    "learning_concept_id",
+                    "technical_concept_id",
+                    "exercise_pattern_id",
+                    "action",
+                    "is_primary"
+                ],
+                "title": "TaskCurriculumLinkResponse"
+            },
+            "TaskCurriculumLinkUpdateRequest": {
+                "properties": {
+                    "language": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Language"
+                    },
+                    "technical_concept_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Technical Concept Id"
+                    },
+                    "exercise_pattern_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Exercise Pattern Id"
+                    },
+                    "is_primary": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Primary"
+                    }
+                },
+                "type": "object",
+                "title": "TaskCurriculumLinkUpdateRequest"
+            },
+            "TaskCurriculumLinkValidateRequest": {
+                "properties": {
+                    "language": {
+                        "type": "string",
+                        "title": "Language",
+                        "default": "python"
+                    },
+                    "technical_concept_id": {
+                        "type": "string",
+                        "title": "Technical Concept Id"
+                    },
+                    "exercise_pattern_id": {
+                        "type": "string",
+                        "title": "Exercise Pattern Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "technical_concept_id",
+                    "exercise_pattern_id"
+                ],
+                "title": "TaskCurriculumLinkValidateRequest"
+            },
+            "TaskCurriculumLinkValidateResponse": {
+                "properties": {
+                    "language": {
+                        "type": "string",
+                        "title": "Language"
+                    },
+                    "learning_concept_id": {
+                        "type": "string",
+                        "title": "Learning Concept Id"
+                    },
+                    "technical_concept_id": {
+                        "type": "string",
+                        "title": "Technical Concept Id"
+                    },
+                    "exercise_pattern_id": {
+                        "type": "string",
+                        "title": "Exercise Pattern Id"
+                    },
+                    "action": {
+                        "type": "string",
+                        "title": "Action"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "language",
+                    "learning_concept_id",
+                    "technical_concept_id",
+                    "exercise_pattern_id",
+                    "action"
+                ],
+                "title": "TaskCurriculumLinkValidateResponse"
+            },
+            "TaskCurriculumMetadataResponse": {
+                "properties": {
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    },
+                    "has_curriculum_link": {
+                        "type": "boolean",
+                        "title": "Has Curriculum Link"
+                    },
+                    "primary_link": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/TaskCurriculumLinkResponse"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "links": {
+                        "items": {
+                            "$ref": "#/components/schemas/TaskCurriculumLinkResponse"
+                        },
+                        "type": "array",
+                        "title": "Links"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "task_id",
+                    "has_curriculum_link"
+                ],
+                "title": "TaskCurriculumMetadataResponse"
+            },
+            "TaskCurriculumProgressItemResponse": {
+                "properties": {
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    },
+                    "progress_status": {
+                        "type": "string",
+                        "title": "Progress Status"
+                    },
+                    "attempts_count": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Attempts Count"
+                    },
+                    "passed_count": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Passed Count"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "task_id",
+                    "progress_status",
+                    "attempts_count",
+                    "passed_count"
+                ],
+                "title": "TaskCurriculumProgressItemResponse"
+            },
+            "TaskDetailResponse": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description"
+                    },
+                    "difficulty": {
+                        "type": "string",
+                        "title": "Difficulty"
+                    },
+                    "task_type": {
+                        "type": "string",
+                        "title": "Task Type"
+                    },
+                    "payload": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Payload"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "title",
+                    "description",
+                    "difficulty",
+                    "task_type"
+                ],
+                "title": "TaskDetailResponse"
+            },
+            "TaskProgressResponse": {
+                "properties": {
+                    "task_id": {
+                        "type": "integer",
+                        "title": "Task Id"
+                    },
+                    "progress_status": {
+                        "type": "string",
+                        "title": "Progress Status"
+                    },
+                    "attempts_count": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Attempts Count"
+                    },
+                    "passed_count": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Passed Count"
+                    },
+                    "last_status": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Status"
+                    },
+                    "last_submission_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Submission Id"
+                    },
+                    "last_attempt_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Attempt At"
+                    },
+                    "first_passed_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "First Passed At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "task_id",
+                    "progress_status",
+                    "attempts_count",
+                    "passed_count"
+                ],
+                "title": "TaskProgressResponse"
+            },
+            "TaskSummaryResponse": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description"
+                    },
+                    "difficulty": {
+                        "type": "string",
+                        "title": "Difficulty"
+                    },
+                    "task_type": {
+                        "type": "string",
+                        "title": "Task Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "title",
+                    "description",
+                    "difficulty",
+                    "task_type"
+                ],
+                "title": "TaskSummaryResponse"
+            },
+            "TechnicalConceptProgressResponse": {
+                "properties": {
+                    "technical_concept_id": {
+                        "type": "string",
+                        "title": "Technical Concept Id"
+                    },
+                    "total_tasks": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Total Tasks"
+                    },
+                    "passed_tasks": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Passed Tasks"
+                    },
+                    "progress_percent": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "title": "Progress Percent"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "technical_concept_id",
+                    "total_tasks",
+                    "passed_tasks",
+                    "progress_percent"
+                ],
+                "title": "TechnicalConceptProgressResponse"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    },
+                    "input": {
+                        "title": "Input"
+                    },
+                    "ctx": {
+                        "type": "object",
+                        "title": "Context"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        },
+        "securitySchemes": {
+            "HTTPBearer": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        }
+    }
+}
