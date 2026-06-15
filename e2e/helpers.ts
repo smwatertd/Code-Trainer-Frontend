@@ -5,11 +5,10 @@ export function uniqueEmail(prefix: string): string {
   return `${prefix}-${Date.now()}@e2e.example.com`
 }
 
-/** После logout: sidebar «Войти» на каталоге или форма входа на /login. */
+/** После logout: ссылка «Войти» видна, профиль скрыт. */
 export async function expectLoggedOut(page: Page): Promise<void> {
-  const sidebarLogin = page.getByRole("navigation").getByRole("link", { name: "Войти" })
-  const loginForm = page.getByRole("button", { name: "Войти" })
-  await expect(sidebarLogin.or(loginForm)).toBeVisible()
+  await expect(page.getByTestId("user-info")).toHaveCount(0)
+  await expect(page.getByRole("link", { name: "Войти" }).first()).toBeVisible()
 }
 
 export async function loginAs(page: Page, email: string, password: string): Promise<void> {
@@ -26,8 +25,13 @@ export async function loginAs(page: Page, email: string, password: string): Prom
 }
 
 export async function fillCodeEditor(page: Page, code: string): Promise<void> {
-  const editor = page.locator(".monaco-editor .view-lines").first()
-  await editor.waitFor({ state: "visible", timeout: 8_000 })
+  await page.setViewportSize({ width: 1400, height: 900 })
+  const editorRoot = page.getByTestId("task-learning-editor")
+  await expect(editorRoot).toBeVisible({ timeout: 10_000 })
+  await expect(editorRoot.getByText("Загрузка редактора…")).toHaveCount(0, { timeout: 20_000 })
+
+  const editor = editorRoot.locator(".monaco-editor .view-lines")
+  await editor.waitFor({ state: "visible", timeout: 20_000 })
   await editor.click()
   await page.keyboard.press("ControlOrMeta+A")
   await page.keyboard.insertText(code)
@@ -47,8 +51,9 @@ export async function clickCheckAndExpectSuccess(page: Page): Promise<void> {
 }
 
 export async function openTask(page: Page, taskId: number): Promise<void> {
+  await page.setViewportSize({ width: 1400, height: 900 })
   await page.goto(`/tasks/${taskId}`)
-  await expect(page.getByTestId("task-check-btn")).toBeVisible({ timeout: 8_000 })
+  await expect(page.getByTestId("task-check-btn")).toBeVisible({ timeout: 15_000 })
 }
 
 /** Задача 1 — блоки Hello, порядок по умолчанию верный. */

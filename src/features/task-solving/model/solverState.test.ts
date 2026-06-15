@@ -56,6 +56,51 @@ describe("getTaskBlocks", () => {
       'cout << "b" << endl;',
     ])
   })
+
+  it("uses code_examples when catalog blocks are for another language paradigm", () => {
+    const task: TaskDetail = {
+      id: 1,
+      title: "Hello",
+      description: "desc",
+      difficulty: "easy",
+      task_type: "task_build_from_blocks",
+      payload: {
+        language: "pascal",
+        blocks: [
+          { id: 0, content: "program Main;" },
+          { id: 1, content: "begin" },
+          { id: 2, content: "writeln('Hello');" },
+          { id: 3, content: "end." },
+        ],
+        blocks_by_language: {
+          pascal: [
+            { id: 0, content: "program Main;" },
+            { id: 1, content: "begin" },
+            { id: 2, content: "writeln('Hello');" },
+            { id: 3, content: "end." },
+          ],
+          python: [
+            { id: 0, content: "program Main;" },
+            { id: 1, content: "begin" },
+            { id: 2, content: "writeln('Hello');" },
+            { id: 3, content: "end." },
+          ],
+        },
+        code_examples: {
+          python: "print('Hello')",
+          pascal: "program Main;\nbegin\n  writeln('Hello');\nend.",
+        },
+      },
+    }
+
+    expect(getTaskBlocks(task, "python").map((block) => block.content)).toEqual(["print('Hello')"])
+    expect(getTaskBlocks(task, "pascal").map((block) => block.content)).toEqual([
+      "program Main;",
+      "begin",
+      "writeln('Hello');",
+      "end.",
+    ])
+  })
 })
 
 describe("buildCodeFromBlocks", () => {

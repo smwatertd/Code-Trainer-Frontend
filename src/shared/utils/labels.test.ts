@@ -8,6 +8,7 @@ import {
   labelJobStatus,
   labelLanguage,
   labelProgressStatus,
+  labelTaskDetailType,
   labelTaskType,
   labelTechnicalConcept,
   labelTopic,
@@ -18,6 +19,18 @@ describe("labels", () => {
   it("localizes task metadata for students", () => {
     expect(labelTaskType("translation")).toBe("Перевод программы")
     expect(labelTaskType("task_build_from_blocks")).toBe("Сборка из блоков")
+    expect(
+      labelTaskDetailType({
+        task_type: "translation",
+        payload: { template: "var x: integer;" },
+      }),
+    ).toBe("Исправление программы")
+    expect(
+      labelTaskDetailType({
+        task_type: "translation",
+        payload: { source_language: "python", target_language: "pascal" },
+      }),
+    ).toBe("Перевод программы")
     expect(labelDifficulty("easy")).toBe("Лёгкая")
     expect(labelProgressStatus("passed")).toBe("Решено")
   })
@@ -44,6 +57,14 @@ describe("labels", () => {
     expect(labelTopic("io")).toBe("Ввод-вывод")
     expect(labelTopic("loops")).toBe("Циклы")
     expect(labelTopic("custom")).toBe("Свои задачи")
+    expect(labelTopic("algorithms")).toBe("Алгоритмы")
+    expect(labelTopic("sort_order")).toBe("Сортировка")
+    expect(labelTopic("nested_iteration")).toBe("Вложенные циклы")
+    expect(labelTopic("inheritance_hierarchy")).toBe("Наследование")
+    expect(labelTopic("data_structures")).toBe("Структуры данных")
+    expect(labelTopic("stack_queue")).toBe("Стек / очередь")
+    expect(labelTopic("for_loop")).toBe("Цикл for")
+    expect(labelTopic("unknown_slug")).toBe("unknown_slug")
   })
 
   it("finds the next incomplete technical concept", () => {

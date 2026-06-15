@@ -3,7 +3,9 @@ import {
   defaultLanguage,
   isBlockReorderTask,
   isCodeToFlowchartTask,
+  isDebugTranslationTask,
   isFlowchartTask,
+  isPlaceholderTask,
   isTranslationTask,
   isWriteFromDescriptionTask,
   problemStatement,
@@ -11,6 +13,11 @@ import {
   sourceLanguage,
 } from "@/shared/utils/taskTypes"
 import { labelLanguage, labelTechnicalConcept } from "@/shared/utils/labels"
+import { getConstructionDetail } from "@/features/task-solving/model/constructionCatalog"
+import {
+  isStubCodeExample,
+} from "@/features/task-solving/model/placeholderTask"
+import { inferCodeLanguage } from "@/features/task-solving/model/codeLanguageHeuristic"
 
 type Payload = Record<string, unknown>
 
@@ -32,9 +39,11 @@ const CONSTRUCTION_LABELS: Record<string, string> = {
   assignment: "Присваивание",
   arithmetic_ops: "Арифметические операции",
   stdout_write: "Вывод в консоль",
+  stdin_read: "Ввод с клавиатуры",
   if_statement: "Условие",
   for_loop: "Цикл for",
   while_loop: "Цикл while",
+  counted_loop: "Цикл со счётчиком",
   io: "Ввод / вывод",
   nested_loops: "Вложенные циклы",
 }
@@ -44,9 +53,10 @@ export function getConstructionLabel(
   hints: Record<string, { title?: string }> = {},
 ): string {
   return (
+    hints[pattern]?.title ??
+    getConstructionDetail(pattern)?.title ??
     CONSTRUCTION_LABELS[pattern] ??
     (labelTechnicalConcept(pattern) !== pattern ? labelTechnicalConcept(pattern) : null) ??
-    hints[pattern]?.title ??
     pattern
   )
 }
@@ -68,14 +78,17 @@ export function getTaskConstructions(task: TaskDetail | null): string[] {
   return raw.map((item) => String(item)).filter(Boolean)
 }
 
-export function getTaskConstructionHints(task: TaskDetail | null): Record<string, { title?: string }> {
+export function getTaskConstructionHints(
+  task: TaskDetail | null,
+): Record<string, { title?: string; description?: string; examples?: Record<string, string> }> {
   const raw = payloadOf(task).construction_hints
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {}
-  return raw as Record<string, { title?: string }>
+  return raw as Record<string, { title?: string; description?: string; examples?: Record<string, string> }>
 }
 
 function hasNonEmptyExample(value: unknown): boolean {
-  return Boolean(String(value ?? "").trim())
+  const text = String(value ?? "").trim()
+  return Boolean(text) && !isStubCodeExample(text)
 }
 
 export function getCodeExamples(task: TaskDetail | null): Record<string, string> {
@@ -116,8 +129,93 @@ export function getCodeExamples(task: TaskDetail | null): Record<string, string>
   return {}
 }
 
+export function debugTemplateLanguage(task: TaskDetail | null): string {
+  if (!task || !isDebugTranslationTask(task)) return ""
+  const payload = payloadOf(task)
+  const template = String(payload.template ?? "")
+  const inferred = inferCodeLanguage(template)
+  if (inferred) return inferred
+  return String(payload.target_language ?? sourceLanguage(task) ?? "python").toLowerCase()
+}
+
+export function taskWorkingLanguage(task: TaskDetail | null): string {
+  if (!task) return "python"
+  const payload = payloadOf(task)
+
+  if (isPlaceholderTask(task)) {
+    return String(payload.language ?? payload.target_language ?? "python").toLowerCase()
+  }
+
+  if (isDebugTranslationTask(task)) {
+    return debugTemplateLanguage(task) || "python"
+  }
+
+  if (isTranslationTask(task)) {
+    const target = String(payload.target_language ?? "").toLowerCase()
+    if (target) return target
+  }
+
+  return String(
+    payload.target_language ?? payload.language ?? payload.source_language ?? "python",
+  ).toLowerCase()
+}
+
+/** Language sent to the checker/compiler — always matches editor content. */
+export function resolveSubmissionLanguage(
+  task: TaskDetail | null,
+  learningLanguage: string,
+): string {
+  if (!task) return learningLanguage
+  if (isPlaceholderTask(task) || isDebugTranslationTask(task)) {
+    return taskWorkingLanguage(task)
+  }
+  return learningLanguage
+}
+
+export function shouldShowParallelLanguageBar(
+  task: TaskDetail | null,
+  knownLanguages: string[],
+  learningLanguages: string[],
+): boolean {
+  if (!task) return false
+  const known = knownLanguages.filter(Boolean)
+  const learning = learningLanguages.filter(Boolean)
+  const referenceLangs = Object.keys(getCodeExamples(task)).filter((key) =>
+    KNOWN_SOURCE_LANGUAGES.has(key.toLowerCase()),
+  )
+  if (referenceLangs.length > 1) return true
+  if (isPlaceholderTask(task) || isDebugTranslationTask(task)) {
+    if (known.length > 1) return true
+    if (isDebugTranslationTask(task)) {
+      return resolveKnownLanguage(task) !== taskWorkingLanguage(task)
+    }
+    return false
+  }
+  return known.length > 0 && learning.length > 1
+}
+
 export function getKnownLanguages(task: TaskDetail | null): string[] {
+  if (!task) return []
   const langs = new Set<string>()
+
+  if (isPlaceholderTask(task)) {
+    for (const key of Object.keys(getCodeExamples(task))) {
+      if (KNOWN_SOURCE_LANGUAGES.has(key)) langs.add(key)
+    }
+    const working = taskWorkingLanguage(task)
+    if (working) langs.add(working)
+    return [...langs]
+  }
+
+  if (isDebugTranslationTask(task)) {
+    const src = sourceLanguage(task).toLowerCase()
+    if (src) langs.add(src)
+    for (const key of Object.keys(getCodeExamples(task))) {
+      if (KNOWN_SOURCE_LANGUAGES.has(key)) langs.add(key)
+    }
+    return [...langs]
+  }
+
   for (const key of Object.keys(getCodeExamples(task))) {
     if (KNOWN_SOURCE_LANGUAGES.has(key)) langs.add(key)
   }
@@ -133,6 +231,20 @@ export function getLearningLanguages(task: TaskDetail | null, serverLanguageIds:
   const payload = payloadOf(task)
   const langs = new Set<string>()
 
+  if (isPlaceholderTask(task)) {
+    const working = taskWorkingLanguage(task)
+    if (working) langs.add(working)
+    return [...langs]
+  }
+
+  if (isDebugTranslationTask(task)) {
+    const working = debugTemplateLanguage(task)
+    if (working) langs.add(working)
+    const src = sourceLanguage(task).toLowerCase()
+    if (src && src !== working) langs.add(src)
+    return [...langs]
+  }
+
   if (isBlockReorderTask(task)) {
     const variants = payload.blocks_by_language
     if (variants && typeof variants === "object" && !Array.isArray(variants)) {
@@ -142,6 +254,9 @@ export function getLearningLanguages(task: TaskDetail | null, serverLanguageIds:
     }
     const primary = String(payload.language ?? "python").toLowerCase()
     if (primary) langs.add(primary)
+    for (const key of Object.keys(getCodeExamples(task))) {
+      langs.add(key.toLowerCase())
+    }
   } else if (isTranslationTask(task)) {
     const target = String(payload.target_language ?? "").toLowerCase()
     if (target) langs.add(target)
@@ -157,9 +272,6 @@ export function getLearningLanguages(task: TaskDetail | null, serverLanguageIds:
   } else {
     const target = String(payload.target_language ?? payload.language ?? "python").toLowerCase()
     if (target) langs.add(target)
-    for (const id of serverLanguageIds) {
-      if (id) langs.add(id)
-    }
   }
 
   const merged = [...langs]
@@ -205,6 +317,22 @@ export function resolveKnownLanguage(
   task: TaskDetail | null,
   preferred?: string,
 ): string {
+  if (!task) return "python"
+  if (isPlaceholderTask(task)) {
+    const available = getKnownLanguages(task)
+    const normalized = String(preferred ?? "").toLowerCase()
+    if (normalized && available.includes(normalized)) return normalized
+    return taskWorkingLanguage(task)
+  }
+  if (isDebugTranslationTask(task)) {
+    const working = taskWorkingLanguage(task)
+    const available = getKnownLanguages(task)
+    const normalized = String(preferred ?? "").toLowerCase()
+    if (normalized && available.includes(normalized)) return normalized
+    if (working === "python") return "python"
+    if (available.includes("python")) return "python"
+    return working
+  }
   const available = getKnownLanguages(task)
   const normalized = String(preferred ?? "").toLowerCase()
   if (normalized && available.includes(normalized)) return normalized
@@ -218,6 +346,10 @@ export function resolveLearningLanguage(
   preferred?: string,
   serverLanguageIds: string[] = [],
 ): string {
+  if (!task) return "python"
+  if (isPlaceholderTask(task) || isDebugTranslationTask(task)) {
+    return taskWorkingLanguage(task)
+  }
   const available = getLearningLanguages(task, serverLanguageIds)
   const normalized = String(preferred ?? "").toLowerCase()
   const known = String(knownLanguage || "").toLowerCase()
@@ -233,6 +365,26 @@ export function resolveLearningLanguage(
   return other ?? fromTask ?? available[0] ?? "python"
 }
 
+export function resolveKnownLanguageBarOptions(task: TaskDetail | null): string[] {
+  return getKnownLanguages(task)
+}
+
+/** Языки для «Учу»: только языки, релевантные задаче. */
+export function resolveLearningLanguageBarOptions(
+  task: TaskDetail | null,
+  serverLanguageIds: string[] = [],
+): string[] {
+  if (!task) return serverLanguageIds.length ? serverLanguageIds : ["python"]
+  if (isPlaceholderTask(task) || isDebugTranslationTask(task)) {
+    return getLearningLanguages(task, serverLanguageIds)
+  }
+  const fromTask = getLearningLanguages(task, serverLanguageIds)
+  const fromExamples = getKnownLanguages(task)
+  const merged = [...new Set([...fromTask, ...fromExamples])]
+  if (merged.length > 0) return merged
+  return fromTask
+}
+
 export function canSwapParallelLanguages(
   knownLanguage: string,
   learningLanguage: string,
@@ -242,13 +394,23 @@ export function canSwapParallelLanguages(
   const known = String(knownLanguage || "").toLowerCase()
   const learning = String(learningLanguage || "").toLowerCase()
   if (!known || !learning || known === learning) return false
-  const knownSet = new Set(knownLanguages.map((id) => id.toLowerCase()))
-  const learningSet = new Set(learningLanguages.map((id) => id.toLowerCase()))
+  const knownSet = new Set(
+    knownLanguages.map((id) => String(id).toLowerCase()).filter(Boolean),
+  )
+  const learningSet = new Set(
+    learningLanguages.map((id) => String(id).toLowerCase()).filter(Boolean),
+  )
   return knownSet.has(learning) && learningSet.has(known)
 }
 
 export function hasReferencePane(task: TaskDetail | null): boolean {
   if (!task) return false
+  if (isPlaceholderTask(task)) {
+    return Boolean(getReferenceCode(task, taskWorkingLanguage(task)))
+  }
+  if (isDebugTranslationTask(task)) {
+    return Boolean(getReferenceCode(task, taskWorkingLanguage(task)))
+  }
   if (getKnownLanguages(task).length > 0) return true
   if (isWriteFromDescriptionTask(task)) return true
   if (isCodeToFlowchartTask(task) && getReferenceCode(task, "python")) return true

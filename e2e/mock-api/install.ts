@@ -26,7 +26,7 @@ export async function installMockApi(page: Page) {
   await page.route(isApiRequest, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
-    const apiPath = url.pathname.replace(/^\/api/, "") || "/"
+    const apiPath = `${url.pathname.replace(/^\/api/, "") || "/"}${url.search}`
     const authorization = request.headers().authorization ?? null
 
     let body: unknown = null

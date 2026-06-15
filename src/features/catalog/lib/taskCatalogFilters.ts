@@ -1,9 +1,7 @@
 import type { TaskSummary } from "@/shared/types/api"
 
-export type TaskCatalogFilterValues = {
-  difficulty?: string
-  task_type?: string
-  topic?: string
+export type TaskSummaryWithConstructions = TaskSummary & {
+  constructions?: string[]
 }
 
 function taskTopics(task: TaskSummary): string[] {
@@ -45,4 +43,20 @@ export function collectCatalogFilterOptions(tasks: TaskSummary[]) {
     taskTypes: Array.from(taskTypes).sort(),
     topics: Array.from(topics).sort(),
   }
+}
+
+export function collectConstructionOptions(tasks: TaskSummaryWithConstructions[]) {
+  const constructions = new Set<string>()
+  for (const task of tasks) {
+    task.constructions?.forEach((value) => {
+      if (value) constructions.add(value)
+    })
+  }
+  return Array.from(constructions).sort()
+}
+
+export type TaskCatalogFilterValues = {
+  difficulty?: string
+  task_type?: string
+  topic?: string
 }

@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom"
+import { useMemo } from "react"
 import { useAccessibleAssignmentSets } from "@/features/assignment-sets/hooks/useAssignmentSets"
+import { useCatalogTasks } from "@/features/catalog"
 import { Badge } from "@/shared/ui/badge"
 import { cn } from "@/shared/ui/cn"
 
@@ -9,6 +11,15 @@ type AssignmentSetsSidebarProps = {
 
 export default function AssignmentSetsSidebar({ className }: AssignmentSetsSidebarProps) {
   const setsQuery = useAccessibleAssignmentSets()
+  const { data: catalogTasks = [] } = useCatalogTasks()
+
+  const progressByTaskId = useMemo(() => {
+    const map = new Map<number, string | null | undefined>()
+    for (const task of catalogTasks) {
+      map.set(task.id, task.progress_status)
+    }
+    return map
+  }, [catalogTasks])
 
   return (
     <aside
@@ -40,6 +51,10 @@ export default function AssignmentSetsSidebar({ className }: AssignmentSetsSideb
         <div className="grid gap-2.5">
           {setsQuery.data.map((set, index) => {
             const total = set.items.length
+            const passed = set.items.filter(
+              (item) => progressByTaskId.get(item.task_id) === "passed",
+            ).length
+            const percent = total ? Math.round((passed / total) * 100) : 0
             const purple = index % 2 === 1
             return (
               <Link
@@ -51,11 +66,11 @@ export default function AssignmentSetsSidebar({ className }: AssignmentSetsSideb
                 <div className="flex items-center justify-between gap-2">
                   <b className="text-[13.5px]">{set.name}</b>
                   <Badge variant={purple ? "secondary" : "default"}>
-                    {total} {total === 1 ? "задача" : "задач"}
+                    {passed}/{total}
                   </Badge>
                 </div>
                 <div className={cn("tp-progress mt-2.5", purple && "pp")}>
-                  <i style={{ width: total > 0 ? "35%" : "0%" }} />
+                  <i style={{ width: `${percent}%` }} />
                 </div>
               </Link>
             )

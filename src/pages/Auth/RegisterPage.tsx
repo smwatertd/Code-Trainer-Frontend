@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/features/auth"
 import { AuthCardLayout } from "@/shared/ui/AuthLayout"
 import Brand from "@/shared/ui/Brand"
+import SocialAuth, { type SocialProvider } from "@/shared/ui/SocialAuth"
+import { markEmailVerificationPending } from "@/shared/ui/VerifyEmailBanner"
 import { Input } from "@/shared/ui/input"
 import { Label } from "@/shared/ui/label"
 import { Button } from "@/shared/ui/button"
@@ -14,6 +16,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [inviteCode, setInviteCode] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -29,12 +32,21 @@ export default function RegisterPage() {
     setError(null)
     try {
       await register(name, email, password)
-      navigate("/", { replace: true })
+      markEmailVerificationPending(email)
+      if (inviteCode.trim()) {
+        navigate("/groups/join", { state: { inviteCode: inviteCode.trim() } })
+      } else {
+        navigate("/", { replace: true })
+      }
     } catch (err) {
       setError(getApiErrorMessage(err, "Не удалось зарегистрироваться"))
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const onSocial = (_provider: SocialProvider) => {
+    setError("Регистрация через соцсети будет доступна позже.")
   }
 
   return (
@@ -82,7 +94,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div className="mb-5 space-y-2">
+        <div className="mb-4 space-y-2">
           <Label htmlFor="password" className="text-[13px] font-semibold text-ink-muted">
             Пароль
           </Label>
@@ -95,6 +107,19 @@ export default function RegisterPage() {
             minLength={8}
             className="h-[42px] border-[#333d4f] bg-bg-2 focus-visible:ring-lime"
             required
+          />
+        </div>
+
+        <div className="mb-5 space-y-2">
+          <Label htmlFor="invite" className="text-[13px] font-semibold text-ink-muted">
+            Инвайт-код группы <span className="font-normal text-ink-faint">(необязательно)</span>
+          </Label>
+          <Input
+            id="invite"
+            value={inviteCode}
+            onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
+            placeholder="GRP-7K2A"
+            className="h-[42px] border-[#333d4f] bg-bg-2 font-mono focus-visible:ring-lime"
           />
         </div>
 
@@ -112,6 +137,8 @@ export default function RegisterPage() {
             Войти
           </Link>
         </p>
+
+        <SocialAuth title="Или зарегистрируйтесь через" onPick={onSocial} />
       </form>
     </AuthCardLayout>
   )

@@ -2,9 +2,11 @@ const DEFAULT_UNKNOWN = "—"
 
 export const TASK_TYPE_LABELS: Record<string, string> = {
   translation: "Перевод программы",
+  translation_debug: "Исправление программы",
   task_write_from_description: "Программа по условию",
   algorithm: "Программа по условию",
   task_build_from_blocks: "Сборка из блоков",
+  task_fill_placeholders: "Заполнить пропуски",
   task_flowchart_to_code: "Блок-схема",
 }
 
@@ -66,11 +68,55 @@ export const LANGUAGE_LABELS: Record<string, string> = {
 }
 
 export const TOPIC_LABELS: Record<string, string> = {
+  // Общие / каталог
   basics: "Основы",
+  program: "Структура программы",
   io: "Ввод-вывод",
   flowchart: "Блок-схема",
   custom: "Свои задачи",
+
+  // Разделы курса (learning concepts)
+  branching: "Ветвление",
+  arrays: "Массивы",
+  strings: "Строки",
+  data: "Данные",
+  modules: "Модули",
+  oop: "ООП",
+  algorithms: "Алгоритмы",
+  data_structures: "Структуры данных",
+  idioms: "Идиомы Python",
   ...LEARNING_CONCEPT_LABELS,
+
+  // Подтемы / technical concepts (используются как topics в задачах)
+  simple_branch: "If then else",
+  multi_branch: "Цепочка if else",
+  counted_loop: "For to/downto",
+  nested_iteration: "Вложенные циклы",
+  indexed_sequence: "Массив array",
+  dynamic_array: "Динамический массив",
+  string_sequence: "Строка string",
+  function_definition: "Procedure / Function",
+  recursion: "Рекурсия",
+  sort_order: "Сортировка",
+  search_find: "Линейный поиск",
+  filter_select: "Отбор по условию",
+  fold_aggregate: "Сумма / агрегация",
+  key_value_map: "Запись record",
+  stdin_read: "Readln",
+  file_read: "Чтение файла",
+  file_write: "Запись файла",
+  import_dependency: "Uses / unit",
+  stack_queue: "Стек / очередь",
+  linked_node: "Связный список",
+  tree_hierarchy: "Дерево",
+  graph_edges: "Граф",
+  class_type: "Class / object",
+  object_instance: "Создание экземпляра",
+  inheritance_hierarchy: "Наследование",
+  map: "Преобразование (map)",
+  filter: "Отбор (filter)",
+  reduce: "Агрегация (reduce)",
+
   ...LANGUAGE_LABELS,
 }
 
@@ -93,6 +139,24 @@ function labelFromMap(map: Record<string, string>, value: string): string {
 
 export function labelTaskType(value: string): string {
   return labelFromMap(TASK_TYPE_LABELS, value)
+}
+
+export function labelTaskDetailType(task: {
+  task_type: string
+  payload?: Record<string, unknown>
+} | null): string {
+  if (!task) return DEFAULT_UNKNOWN
+  const payload = task.payload ?? {}
+  if (task.task_type === "translation") {
+    if (String(payload.kind ?? "").trim().toLowerCase() === "debug") {
+      return TASK_TYPE_LABELS.translation_debug
+    }
+    if (String(payload.template ?? "").trim()) {
+      return TASK_TYPE_LABELS.translation_debug
+    }
+    return TASK_TYPE_LABELS.translation
+  }
+  return labelTaskType(task.task_type)
 }
 
 export function labelDifficulty(value: string): string {
@@ -124,7 +188,14 @@ export function labelLanguage(value: string): string {
 }
 
 export function labelTopic(value: string): string {
-  return labelFromMap(TOPIC_LABELS, value)
+  const normalized = value.trim()
+  if (!normalized) return DEFAULT_UNKNOWN
+  const topic =
+    TOPIC_LABELS[normalized] ??
+    TOPIC_LABELS[normalized.toLowerCase()] ??
+    TECHNICAL_CONCEPT_LABELS[normalized] ??
+    TECHNICAL_CONCEPT_LABELS[normalized.toLowerCase()]
+  return topic ?? normalized
 }
 
 export function labelJobStatus(value: string): string {

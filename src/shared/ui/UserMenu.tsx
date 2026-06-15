@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
+import { useEffect, useRef, useState } from "react"
 import type { CurrentUser } from "@/shared/types/api"
 import { labelUserRole } from "@/shared/utils/labels"
 import { cn } from "@/shared/ui/cn"
@@ -36,7 +36,7 @@ export default function UserMenu({ user, onLogout, className }: UserMenuProps) {
     <div ref={rootRef} className={cn("relative", className)}>
       <button
         type="button"
-        className="grid h-9 w-9 place-items-center rounded-full border border-purple/40 bg-purple-soft text-sm font-bold text-[#cbb6ff] transition hover:border-purple hover:bg-purple hover:text-white"
+        className="grid h-9 w-9 place-items-center rounded-full border border-purple/40 bg-purple-soft text-sm font-bold text-[#b89bff] transition hover:border-purple hover:bg-purple hover:text-white"
         aria-label={`Меню пользователя: ${user.name}`}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
@@ -50,14 +50,14 @@ export default function UserMenu({ user, onLogout, className }: UserMenuProps) {
             <span className="text-xs text-ink-muted">{labelUserRole(user.role)}</span>
           </div>
           <Link
-            to="/profile"
+            to="/student/profile"
             className="block px-3.5 py-2 text-sm text-ink-muted transition hover:bg-surface-2 hover:text-ink"
             onClick={() => setOpen(false)}
           >
             Профиль
           </Link>
           <Link
-            to="/settings"
+            to="/settings/profile"
             className="block px-3.5 py-2 text-sm text-ink-muted transition hover:bg-surface-2 hover:text-ink"
             onClick={() => setOpen(false)}
           >

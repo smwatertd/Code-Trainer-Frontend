@@ -16,7 +16,11 @@ function pascalBlocks(
   return {
     language: "pascal",
     blocks: items,
-    blocks_by_language: { pascal: items },
+    blocks_by_language: {
+      pascal: items,
+      // API синтезирует «python»-блоки из Pascal-скелета — фронт должен брать code_examples.
+      python: items,
+    },
     blocks_count: items.length,
     correct_order: correctOrder,
     source_language: "python",
@@ -56,6 +60,17 @@ export const MOCK_TASKS: TaskSeed[] = [
       {
         expected_code: "program Main;\nbegin\n  writeln('Hello');\nend.",
         test_cases: [{ inputs: "", output: "Hello" }],
+        code_examples: {
+          python: "print('Hello')",
+          pascal: "program Main;\nbegin\n  writeln('Hello');\nend.",
+        },
+        constructions: [
+          "program_entry",
+          "typed_declaration",
+          "assignment",
+          "arithmetic_ops",
+          "stdout_write",
+        ],
       },
     ),
   },
@@ -66,8 +81,14 @@ export const MOCK_TASKS: TaskSeed[] = [
     difficulty: "medium",
     task_type: "translation",
     payload: pascalTranslation("age = int(input())\nprint(age)", {
+      kind: "debug",
       template: "var age: integer;\nbegin\n  age := 18;\n  writeln(age);\nend.",
       test_cases: [{ inputs: "18\n", output: "18" }],
+      code_examples: {
+        python: "age = int(input())\nprint(age)",
+        cpp: "int age;\nstd::cin >> age;\nstd::cout << age << \"\\n\";",
+        pascal: "var age: integer;\nbegin\n  readln(age);\n  writeln(age);\nend.",
+      },
     }),
   },
   {
@@ -99,6 +120,11 @@ export const MOCK_TASKS: TaskSeed[] = [
       [0, 1, 2, 3, 4, 5, 6],
       {
         test_cases: [{ inputs: "4\n6\n", output: "24" }],
+        code_examples: {
+          python: "w=int(input())\nh=int(input())\nprint(w*h)",
+          pascal:
+            "var w,h,area: integer;\nbegin\n  readln(w,h);\n  area:=w*h;\n  writeln(area);\nend.",
+        },
       },
     ),
   },
@@ -121,7 +147,14 @@ export const MOCK_TASKS: TaskSeed[] = [
     task_type: "translation",
     payload: pascalTranslation(
       "a = int(input())\nb = int(input())\nt = a\na = b\nb = t\nprint(a, b)",
-      { test_cases: [{ inputs: "3\n8\n", output: "8 3" }] },
+      {
+        test_cases: [{ inputs: "3\n8\n", output: "8 3" }],
+        code_examples: {
+          python: "a = int(input())\nb = int(input())\nt = a\na = b\nb = t\nprint(a, b)",
+          pascal:
+            "var a,b,t: integer;\nbegin\n  readln(a,b);\n  t:=a; a:=b; b:=t;\n  writeln(a,' ',b);\nend.",
+        },
+      },
     ),
   },
   {
@@ -268,33 +301,105 @@ export function curriculumValidation(language: string) {
     language,
     valid: true,
     errors: [],
-    stats: { chapters: 3, concepts: 12, patterns: 24 },
+    stats: { chapters: 4, concepts: 14, patterns: 24 },
   }
 }
 
-const CHAPTER_META = [
+const PYTHON_CHAPTER_META = [
   {
-    collection_id: "loops",
-    title_ru: "Циклы",
-    description_ru: "Повторение: for, while.",
+    collection_id: "first_steps",
+    title_ru: "Первые программы",
+    description_ru: "print, input() и простые вычисления.",
     order: 1,
-    taskIds: [1, 3, 7],
+    taskIds: [1, 2, 3],
   },
   {
-    collection_id: "conditions",
-    title_ru: "Условия",
-    description_ru: "Ветвление: if, elif, else.",
+    collection_id: "data_expressions",
+    title_ru: "Данные и выражения",
+    description_ru: "Переменные и арифметика.",
     order: 2,
-    taskIds: [2, 5, 8],
+    taskIds: [4, 5, 6, 9],
   },
   {
-    collection_id: "functions",
-    title_ru: "Функции",
-    description_ru: "Именованные блоки кода с параметрами.",
+    collection_id: "branching",
+    title_ru: "Ветвление",
+    description_ru: "if / elif / else.",
     order: 3,
-    taskIds: [4, 6, 9],
+    taskIds: [8, 11, 18, 23],
+  },
+  {
+    collection_id: "repetition",
+    title_ru: "Циклы",
+    description_ru: "for, while, div и mod.",
+    order: 4,
+    taskIds: [7, 10, 16, 17, 19],
+  },
+  {
+    collection_id: "functions_console",
+    title_ru: "Функции и консоль",
+    description_ru: "def, return и stdin/stdout.",
+    order: 5,
+    taskIds: [12, 13, 14, 15, 20, 21, 22, 24],
   },
 ] as const
+
+const CPP_CHAPTER_META = [
+  {
+    collection_id: "program_structure",
+    title_ru: "Программа и main",
+    description_ru: "Каркас консольной программы.",
+    order: 1,
+    taskIds: [1, 2, 13],
+  },
+  {
+    collection_id: "variables_ops",
+    title_ru: "Переменные и операции",
+    description_ru: "Типы и арифметика.",
+    order: 2,
+    taskIds: [3, 4, 5, 6, 7, 9],
+  },
+  {
+    collection_id: "control_if",
+    title_ru: "Условный оператор",
+    description_ru: "if / else.",
+    order: 3,
+    taskIds: [8, 11, 18, 20, 23],
+  },
+  {
+    collection_id: "control_loops",
+    title_ru: "Циклы",
+    description_ru: "for и while.",
+    order: 4,
+    taskIds: [10, 16, 17, 19, 22],
+  },
+  {
+    collection_id: "functions_streams",
+    title_ru: "Функции и потоки",
+    description_ru: "Функции и cin/cout.",
+    order: 5,
+    taskIds: [12, 14, 15, 21, 24],
+  },
+] as const
+
+const CHAPTER_META_BY_LANGUAGE: Record<string, readonly (typeof PYTHON_CHAPTER_META)[number][]> = {
+  python: PYTHON_CHAPTER_META,
+  cpp: CPP_CHAPTER_META,
+  java: PYTHON_CHAPTER_META,
+  csharp: PYTHON_CHAPTER_META,
+  pascal: PYTHON_CHAPTER_META,
+}
+
+function chapterMetaForLanguage(language: string) {
+  return CHAPTER_META_BY_LANGUAGE[language] ?? PYTHON_CHAPTER_META
+}
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  python: "Python",
+  pascal: "Pascal",
+  cpp: "C++",
+  csharp: "C#",
+  java: "Java",
+}
 
 function mockTaskProgress(userId: number | null, taskId: number, store?: { taskProgress: Map<string, { progress_status: string }> }) {
   if (!userId || !store) return null
@@ -307,7 +412,7 @@ export function buildMockLanguageTrack(
   userId: number | null,
   store?: { taskProgress: Map<string, { progress_status: string }> },
 ) {
-  const collections = CHAPTER_META.map((chapter) => {
+  const collections = chapterMetaForLanguage(language).map((chapter) => {
     const total = chapter.taskIds.length
     const passed = chapter.taskIds.filter(
       (taskId) => mockTaskProgress(userId, taskId, store) === "passed",
@@ -346,7 +451,7 @@ export function buildMockLanguageTrack(
 
   return {
     language,
-    language_label: language === "pascal" ? "Pascal" : "Python",
+    language_label: LANGUAGE_LABELS[language] ?? language,
     progress: {
       total_tasks: aggregateTotal,
       passed_tasks: aggregatePassed,
@@ -362,7 +467,7 @@ export function buildMockCollectionShowcase(
   userId: number | null,
   store?: { taskProgress: Map<string, { progress_status: string }> },
 ) {
-  const chapter = CHAPTER_META.find((item) => item.collection_id === conceptId)
+  const chapter = chapterMetaForLanguage(language).find((item) => item.collection_id === conceptId)
   if (!chapter) {
     return null
   }

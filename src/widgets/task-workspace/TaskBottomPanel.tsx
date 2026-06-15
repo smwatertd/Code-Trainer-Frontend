@@ -65,7 +65,8 @@ export default function TaskBottomPanel({ task, result, onRun, isSubmitting }: T
   }, [errors.length, result])
 
   const testsBadge = stats.total > 0 ? `${stats.passed}/${stats.total}` : "0"
-  const allPassed = stats.total > 0 && stats.passed === stats.total
+  const allTestsPassed = stats.total > 0 && stats.passed === stats.total
+  const overallSuccess = result?.success === true
   const checkFailed = result?.success === false
 
   return (
@@ -136,14 +137,15 @@ export default function TaskBottomPanel({ task, result, onRun, isSubmitting }: T
               <div className="mb-2.5 flex items-center justify-between gap-3">
                 <b className="text-[13.5px]">Тесты</b>
                 <Badge
-                  variant={allPassed ? "default" : "outline"}
-                  data-testid={allPassed ? "result-success-badge" : undefined}
+                  variant={overallSuccess ? "default" : "outline"}
+                  data-testid={overallSuccess ? "result-success-badge" : undefined}
                   className={cn(
-                    allPassed && "border-lime/30 bg-lime-soft text-lime",
-                    !allPassed && stats.failed > 0 && "border-warning/35 text-warning",
+                    overallSuccess && "border-lime/30 bg-lime-soft text-lime",
+                    !overallSuccess && stats.failed > 0 && "border-warning/35 text-warning",
+                    !overallSuccess && stats.failed === 0 && allTestsPassed && "border-warning/35 text-warning",
                   )}
                 >
-                  {allPassed ? "Успех" : `${testsBadge} пройдено`}
+                  {overallSuccess ? "Успех" : allTestsPassed ? "Проверьте структуры" : `${testsBadge} пройдено`}
                 </Badge>
               </div>
 
@@ -230,17 +232,36 @@ export default function TaskBottomPanel({ task, result, onRun, isSubmitting }: T
           <p className="text-sm text-ink-muted">Ошибок нет.</p>
         ) : (
           <ul className="space-y-2">
-            {errors.map((error, index) => (
+            {errors.map((error, index) => {
+              const isConstruction = error.tone === "purple" || error.source === "Структуры"
+              return (
               <li
                 key={`${error.source}-${error.type}-${index}`}
-                className="rounded-lg border border-danger/30 bg-danger-soft/40 px-3 py-2 text-sm"
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-sm",
+                  isConstruction
+                    ? "border-purple/35 bg-purple-soft/40"
+                    : "border-danger/30 bg-danger-soft/40",
+                )}
               >
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
-                  {error.source}
+                <div className="mb-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <span>{error.source}</span>
+                  {isConstruction ? (
+                    <span className="rounded border border-border bg-surface-2 px-1.5 py-0.5 text-[9px] text-ink-muted">
+                      CONSTRUCTION
+                    </span>
+                  ) : null}
                 </div>
-                <pre className="whitespace-pre-wrap font-mono text-xs text-[#ff8198]">{error.text}</pre>
+                <pre
+                  className={cn(
+                    "whitespace-pre-wrap font-mono text-xs",
+                    isConstruction ? "text-[#cbb6ff]" : "text-[#ff8198]",
+                  )}
+                >
+                  {error.text}
+                </pre>
               </li>
-            ))}
+            )})}
           </ul>
         )}
       </div>

@@ -1,5 +1,7 @@
 import { Link, useParams } from "react-router-dom"
+import { useAuth } from "@/features/auth"
 import { useGroupDashboard } from "@/features/groups/hooks/useGroups"
+import TeacherWorkspaceTabs from "@/features/teacher/ui/TeacherWorkspaceTabs"
 import ApiErrorAlert from "@/shared/ui/ApiErrorAlert"
 import ShellPage from "@/shared/ui/ShellPage"
 import { Badge } from "@/shared/ui/badge"
@@ -8,6 +10,7 @@ import { labelProgressStatus } from "@/shared/utils/labels"
 
 export default function GroupDashboardPage() {
   const { id } = useParams()
+  const { user } = useAuth()
   const groupId = Number(id)
   const dashboardQuery = useGroupDashboard(groupId)
 
@@ -46,6 +49,8 @@ export default function GroupDashboardPage() {
           </Button>
         }
       >
+        <TeacherWorkspaceTabs />
+
         <h1 className="sr-only" data-testid="group-dashboard-title">
           {dashboard.group.name}
         </h1>
@@ -99,7 +104,12 @@ export default function GroupDashboardPage() {
                   className="rounded-xl border border-border bg-surface-2 p-4"
                 >
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium">{summary.student_name}</p>
+                    <Link
+                      to={`/users/${summary.student_id}?teacherId=${user?.id ?? dashboard.group.teacher_id}`}
+                      className="font-medium text-lime hover:underline"
+                    >
+                      {summary.student_name}
+                    </Link>
                     <Badge variant="secondary">
                       {summary.solved_count}/{summary.total_tasks} · {summary.progress_percent}%
                     </Badge>

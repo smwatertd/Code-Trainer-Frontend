@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 import { Toaster } from "sonner"
 import App from "@/app/App"
 import QueryProvider from "@/shared/providers/QueryProvider"
+import "@/shared/monaco/setupMonaco"
 import "@/index.css"
 
 createRoot(document.getElementById("root")!).render(

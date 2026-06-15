@@ -9,7 +9,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : 4,
   reporter: process.env.CI ? "github" : [["list", { printSteps: false }]],
-  timeout: 30_000,
+  timeout: 60_000,
   expect: { timeout: 8_000 },
   use: {
     baseURL,

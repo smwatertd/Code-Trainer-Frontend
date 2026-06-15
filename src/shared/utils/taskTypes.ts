@@ -1,29 +1,42 @@
 import type { TaskDetail } from "@/shared/types/api"
 
-export function isTranslationTask(task: TaskDetail): boolean {
-  return task.task_type === "translation"
+export function isTranslationTask(task: TaskDetail | null): boolean {
+  return task?.task_type === "translation"
 }
 
-export function isWriteFromDescriptionTask(task: TaskDetail): boolean {
+/** Translation with a buggy template — user fixes code, does not write from scratch. */
+export function isDebugTranslationTask(task: TaskDetail | null): boolean {
+  if (!task || !isTranslationTask(task)) return false
+  const payload = task.payload as Record<string, unknown>
+  if (String(payload.kind ?? "").trim().toLowerCase() === "debug") return true
+  return Boolean(String(payload.template ?? "").trim())
+}
+
+export function isWriteFromDescriptionTask(task: TaskDetail | null): boolean {
   return (
-    task.task_type === "task_write_from_description" || task.task_type === "algorithm"
+    task?.task_type === "task_write_from_description" || task?.task_type === "algorithm"
   )
 }
 
-export function isCodingTask(task: TaskDetail): boolean {
-  return isTranslationTask(task) || isWriteFromDescriptionTask(task)
+export function isCodingTask(task: TaskDetail | null): boolean {
+  if (!task) return false
+  return isTranslationTask(task) || isWriteFromDescriptionTask(task) || isPlaceholderTask(task)
 }
 
-export function isBlockReorderTask(task: TaskDetail): boolean {
-  return task.task_type === "task_build_from_blocks"
+export function isBlockReorderTask(task: TaskDetail | null): boolean {
+  return task?.task_type === "task_build_from_blocks"
 }
 
-export function isFlowchartTask(task: TaskDetail): boolean {
-  return task.task_type === "task_flowchart_to_code"
+export function isPlaceholderTask(task: TaskDetail | null): boolean {
+  return task?.task_type === "task_fill_placeholders"
 }
 
-export function isCodeToFlowchartTask(task: TaskDetail): boolean {
-  return isFlowchartTask(task) && task.payload.flowchart_mode === "code_to_flowchart"
+export function isFlowchartTask(task: TaskDetail | null): boolean {
+  return task?.task_type === "task_flowchart_to_code"
+}
+
+export function isCodeToFlowchartTask(task: TaskDetail | null): boolean {
+  return isFlowchartTask(task) && task?.payload.flowchart_mode === "code_to_flowchart"
 }
 
 export function sourceLanguage(task: TaskDetail | null): string {

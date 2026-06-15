@@ -10,9 +10,9 @@ import {
 import { cn } from "@/shared/ui/cn"
 
 const TRACKS = [
-  { language: "python", conceptId: "loops", label: "Python · Циклы" },
-  { language: "python", conceptId: "conditions", label: "Python · Условия" },
-  { language: "python", conceptId: "functions", label: "Python · Функции" },
+  { language: "python", conceptId: "chapter_1", label: "Python · Базовый синтаксис" },
+  { language: "python", conceptId: "chapter_2", label: "Python · Ветвления" },
+  { language: "python", conceptId: "chapter_3", label: "Python · Циклы" },
 ] as const
 
 export default function ProgressSummary() {
@@ -20,7 +20,7 @@ export default function ProgressSummary() {
     <div className="mb-6 pt-2">
       <div className="mb-3 flex items-end justify-between gap-3">
         <h2 className="text-lg font-bold tracking-tight">Прогресс по учебному плану</h2>
-        <Link to="/learn/python" className="text-sm font-semibold text-lime hover:underline">
+        <Link to="/learn" className="text-sm font-semibold text-lime hover:underline">
           Все треки →
         </Link>
       </div>

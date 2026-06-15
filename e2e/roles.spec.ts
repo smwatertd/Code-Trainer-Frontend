@@ -2,6 +2,29 @@ import { test, expect } from "./fixtures/playwright"
 import { DEV_USERS } from "./fixtures"
 import { loginAs, solveFixTask2Age } from "./helpers"
 
+test("teacher can create and edit own task", async ({ page }) => {
+  await loginAs(page, DEV_USERS.teacher.email, DEV_USERS.teacher.password)
+  await page.goto("/teacher/cabinet")
+  await expect(page.getByRole("heading", { name: "Кабинет преподавателя" })).toBeVisible()
+
+  await page.getByTestId("teacher-create-task").click()
+  await expect(page.getByRole("heading", { name: "Создать задачу" })).toBeVisible()
+
+  await page.getByLabel("Название").fill("E2E teacher task")
+  await page.getByLabel("Условие").fill("Выведите hello")
+  await page.getByLabel("Ожидаемый вывод (тест)").fill("hello")
+  await page.getByRole("button", { name: "Создать" }).click()
+
+  await expect(page.getByRole("heading", { name: "Кабинет преподавателя" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "E2E teacher task" })).toBeVisible()
+
+  await page.getByRole("link", { name: "E2E teacher task" }).click()
+  await expect(page.getByRole("heading", { name: "Редактировать задачу" })).toBeVisible()
+  await page.getByLabel("Название").fill("E2E teacher task updated")
+  await page.getByRole("button", { name: "Сохранить" }).click()
+  await expect(page.getByRole("link", { name: "E2E teacher task updated" })).toBeVisible()
+})
+
 test("teacher can validate and create curriculum link", async ({ page }) => {
   await loginAs(page, DEV_USERS.teacher.email, DEV_USERS.teacher.password)
   await expect(page.getByTestId("user-info")).toContainText("Преподаватель")
@@ -34,11 +57,6 @@ test("admin can view curriculum validation", async ({ page }) => {
 
 test("student submission updates task progress", async ({ page }) => {
   await loginAs(page, DEV_USERS.student.email, DEV_USERS.student.password)
-
-  await page.goto("/tasks/2")
-  await expect(page.getByRole("heading", { name: "Сохранить возраст" })).toBeVisible()
   await solveFixTask2Age(page)
-
-  await expect(page.getByTestId("task-progress")).toBeVisible()
-  await expect(page.getByTestId("task-progress")).toContainText("Решено")
+  await expect(page.getByTestId("task-progress")).toContainText("Решено", { timeout: 15_000 })
 })

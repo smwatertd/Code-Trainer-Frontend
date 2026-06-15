@@ -21,7 +21,7 @@ export default function AppTopbar({
   right,
 }: AppTopbarProps) {
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-[rgba(12,17,26,.6)] px-6 backdrop-blur-md">
+    <header className="sticky z-10 flex h-14 items-center justify-between border-b border-border bg-[rgba(12,17,26,.6)] px-6 backdrop-blur-md" style={{ top: "var(--banner-h)" }}>
       <div className="text-sm text-ink-muted">
         {crumbHome ? (
           <>

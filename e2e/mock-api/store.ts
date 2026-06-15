@@ -65,6 +65,16 @@ type TaskProgress = {
   last_status: string | null
 }
 
+type TeacherOwnedTask = {
+  id: number
+  owner_user_id: number
+  title: string
+  description: string
+  difficulty: string
+  task_type: string
+  payload: Record<string, unknown>
+}
+
 type MockResponse = { status: number; body: unknown }
 
 function nowIso() {
@@ -122,6 +132,9 @@ function toCatalogSummary(
     task_type: task.task_type,
     topics: [],
     languages: summaryLanguages(task.payload),
+    constructions: Array.isArray(task.payload.constructions)
+      ? task.payload.constructions.filter((value): value is string => typeof value === "string")
+      : [],
     progress_status:
       userId != null ? progress?.progress_status ?? "not_started" : null,
   }
@@ -138,12 +151,14 @@ export class MockApiStore {
   learningProgress = new Map<string, ReturnType<typeof emptyLearningProgress>>()
   demoJobs = new Map<string, ReturnType<typeof successCheckResult>>()
   submissions = new Map<number, ReturnType<typeof successCheckResult>>()
+  teacherTasks: TeacherOwnedTask[] = []
   nextUserId = 100
   nextGroupId = 1
   nextInvitationId = 1
   nextSetId = 1
   nextLinkId = 1
   nextSubmissionId = 1
+  nextTeacherTaskId = 1000
 
   reset() {
     this.users = MOCK_DEV_USERS.map((user) => ({ ...user }))
@@ -156,12 +171,14 @@ export class MockApiStore {
     this.learningProgress = new Map()
     this.demoJobs = new Map()
     this.submissions = new Map()
+    this.teacherTasks = []
     this.nextUserId = 100
     this.nextGroupId = 1
     this.nextInvitationId = 1
     this.nextSetId = 1
     this.nextLinkId = 1
     this.nextSubmissionId = 1
+    this.nextTeacherTaskId = 1000
 
     for (const conceptId of ["loops", "conditions", "functions"]) {
       this.learningProgress.set(
@@ -216,8 +233,105 @@ export class MockApiStore {
     }
   }
 
+  private buildMyProfile(user: User) {
+    let solved = 0
+    let attempted = 0
+    for (const [key, row] of this.taskProgress.entries()) {
+      if (!key.startsWith(`${user.id}:`)) continue
+      attempted += 1
+      if (row.progress_status === "passed") solved += 1
+    }
+    return {
+      user_id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      handle: `@${user.email.split("@")[0]}`,
+      level: solved >= 10 ? "Junior" : "Beginner",
+      solved_tasks_count: solved,
+      total_tasks_attempted: attempted,
+      success_rate: solved > 0 ? 82 : 0,
+      streak_days: solved > 0 ? 3 : 0,
+      groups_count: this.groups.filter((group) => this.groupMembers.get(group.id)?.has(user.id)).length,
+      activity_by_date: { [nowIso().slice(0, 10)]: solved > 0 ? 2 : 0 },
+      recent_submissions: [],
+      skills: [
+        { id: "loops", label: "Циклы", percent: 40, solved: 2, total: 5 },
+        { id: "conditions", label: "Условия", percent: 60, solved: 3, total: 5 },
+      ],
+    }
+  }
+
+  private buildUserProfile(target: User, viewer: User, teacherId: number | null) {
+    if (target.role === "teacher" || target.role === "admin") {
+      const groups = this.groups.filter((group) => group.teacher_id === target.id)
+      return {
+        kind: "teacher",
+        user_id: target.id,
+        name: target.name,
+        email: target.email,
+        handle: `@${target.email.split("@")[0]}`,
+        initials: target.name.slice(0, 1).toUpperCase(),
+        bio: "Преподаватель платформы.",
+        groups: groups.map((group) => ({
+          id: group.id,
+          name: group.name,
+          member_count: this.groupMembers.get(group.id)?.size ?? 0,
+        })),
+        stats: {
+          tasks_count: 5,
+          groups_count: groups.length,
+          students_count: groups.reduce(
+            (sum, group) => sum + (this.groupMembers.get(group.id)?.size ?? 0),
+            0,
+          ),
+          assignment_sets_count: this.assignmentSets.filter((set) => set.teacher_id === target.id).length,
+        },
+        is_own_profile: viewer.id === target.id,
+      }
+    }
+
+    const groups = this.groups
+      .filter((group) => this.groupMembers.get(group.id)?.has(target.id))
+      .map((group) => {
+        const teacher = this.users.find((item) => item.id === group.teacher_id)
+        return {
+          id: group.id,
+          name: group.name,
+          teacher_id: group.teacher_id,
+          teacher_name: teacher?.name ?? "Преподаватель",
+        }
+      })
+
+    const teacher = teacherId ? this.users.find((item) => item.id === teacherId) : null
+
+    return {
+      kind: "student",
+      user_id: target.id,
+      name: target.name,
+      email: target.email,
+      handle: `@${target.email.split("@")[0]}`,
+      initials: target.name.slice(0, 1).toUpperCase(),
+      level: "Junior",
+      summary: {
+        solved_count: 2,
+        success_rate: 80,
+        streak_days: 2,
+        attempts_count: 5,
+        last_activity_at: nowIso(),
+      },
+      groups,
+      skills: [{ id: "loops", label: "Циклы", percent: 50, solved: 1, total: 2 }],
+      recent_submissions: [],
+      teacher: teacher ? { id: teacher.id, name: teacher.name } : null,
+      is_own_profile: viewer.id === target.id,
+    }
+  }
+
   handle(method: string, pathname: string, authorization: string | null, body: unknown): MockResponse {
-    const path = pathname.replace(/\/$/, "") || "/"
+    const [pathOnly, queryString = ""] = pathname.split("?")
+    const path = pathOnly.replace(/\/$/, "") || "/"
+    const searchParams = new URLSearchParams(queryString)
 
     if (method === "GET" && path === "/languages") {
       return { status: 200, body: MOCK_LANGUAGES }
@@ -236,6 +350,105 @@ export class MockApiStore {
       const task = MOCK_TASKS.find((item) => item.id === Number(taskMatch[1]))
       if (!task) return { status: 404, body: { error: { code: "NOT_FOUND", message: "Task not found" } } }
       return { status: 200, body: task }
+    }
+
+    if (method === "GET" && path === "/teacher/tasks/mine") {
+      const user = this.requireUser(authorization)
+      if ("status" in user) return user
+      return {
+        status: 200,
+        body: this.teacherTasks
+          .filter((task) => task.owner_user_id === user.id)
+          .map((task) => ({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            difficulty: task.difficulty,
+            task_type: task.task_type,
+            topics: Array.isArray(task.payload.topics) ? task.payload.topics : ["custom"],
+            languages: ["python"],
+          })),
+      }
+    }
+
+    const teacherTaskMatch = path.match(/^\/teacher\/tasks\/(\d+)$/)
+    if (teacherTaskMatch) {
+      const taskId = Number(teacherTaskMatch[1])
+      const task = this.teacherTasks.find((item) => item.id === taskId)
+      const user = this.requireUser(authorization)
+      if ("status" in user) return user
+      if (!task || (task.owner_user_id !== user.id && user.role !== "admin")) {
+        return { status: 404, body: { error: { code: "NOT_FOUND", message: "Task not found" } } }
+      }
+      if (method === "GET") {
+        return {
+          status: 200,
+          body: {
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            difficulty: task.difficulty,
+            task_type: task.task_type,
+            payload: task.payload,
+          },
+        }
+      }
+      if (method === "PATCH") {
+        const payload = body as {
+          title?: string
+          description?: string
+          difficulty?: string
+          payload?: Record<string, unknown>
+        }
+        if (payload.title != null) task.title = payload.title
+        if (payload.description != null) task.description = payload.description
+        if (payload.difficulty != null) task.difficulty = payload.difficulty
+        if (payload.payload != null) task.payload = payload.payload
+        return {
+          status: 200,
+          body: {
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            difficulty: task.difficulty,
+            task_type: task.task_type,
+            payload: task.payload,
+          },
+        }
+      }
+    }
+
+    if (method === "POST" && path === "/teacher/tasks") {
+      const user = this.requireUser(authorization)
+      if ("status" in user) return user
+      const payload = body as {
+        title?: string
+        description?: string
+        difficulty?: string
+        task_type?: string
+        payload?: Record<string, unknown>
+      }
+      const task: TeacherOwnedTask = {
+        id: this.nextTeacherTaskId++,
+        owner_user_id: user.id,
+        title: payload.title ?? "Untitled",
+        description: payload.description ?? "",
+        difficulty: payload.difficulty ?? "easy",
+        task_type: payload.task_type ?? "task_write_from_description",
+        payload: payload.payload ?? {},
+      }
+      this.teacherTasks.push(task)
+      return {
+        status: 200,
+        body: {
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          difficulty: task.difficulty,
+          task_type: task.task_type,
+          payload: task.payload,
+        },
+      }
     }
 
     if (method === "POST" && path === "/auth/login") {
@@ -681,6 +894,25 @@ export class MockApiStore {
         sort_order: payload.sort_order ?? set.items.length,
       })
       return { status: 204, body: null }
+    }
+
+    if (method === "GET" && path === "/profiles/me") {
+      const user = this.requireUser(authorization)
+      if ("status" in user) return user
+      return { status: 200, body: this.buildMyProfile(user) }
+    }
+
+    const profileUserMatch = path.match(/^\/profiles\/users\/(\d+)$/)
+    if (method === "GET" && profileUserMatch) {
+      const viewer = this.requireUser(authorization)
+      if ("status" in viewer) return viewer
+      const targetId = Number(profileUserMatch[1])
+      const target = this.users.find((item) => item.id === targetId)
+      if (!target) {
+        return { status: 404, body: { error: { code: "NOT_FOUND", message: "User not found" } } }
+      }
+      const teacherId = searchParams.get("teacher_id")
+      return { status: 200, body: this.buildUserProfile(target, viewer, teacherId ? Number(teacherId) : null) }
     }
 
     return { status: 404, body: { error: { code: "NOT_FOUND", message: `Unhandled route ${method} ${path}` } } }

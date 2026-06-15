@@ -4,7 +4,9 @@ import {
   defaultLanguage,
   isCodeToFlowchartTask,
   isCodingTask,
+  isDebugTranslationTask,
   isFlowchartTask,
+  isPlaceholderTask,
   isWriteFromDescriptionTask,
   resolveSolverLanguage,
   selectableLanguages,
@@ -49,6 +51,20 @@ const WRITE_FROM_DESCRIPTION: TaskDetail = {
   payload: {
     target_language: "python",
     template: "# ваш код\n",
+  },
+}
+
+const PLACEHOLDER: TaskDetail = {
+  id: 331,
+  title: "Placeholder",
+  description: "desc",
+  difficulty: "medium",
+  task_type: "task_fill_placeholders",
+  payload: {
+    language: "python",
+    target_language: "python",
+    placeholder_template: "print(___)",
+    placeholder_bank: ["input"],
   },
 }
 
@@ -101,5 +117,24 @@ describe("taskTypes flowchart helpers", () => {
     expect(sourceLanguage(TRANSLATION)).toBe("python")
     expect(starterCode(WRITE_FROM_DESCRIPTION)).toBe("# ваш код\n")
     expect(starterCode({ ...WRITE_FROM_DESCRIPTION, payload: { target_language: "python" } })).toBe("")
+  })
+
+  it("detects placeholder tasks as coding tasks", () => {
+    expect(isPlaceholderTask(PLACEHOLDER)).toBe(true)
+    expect(isCodingTask(PLACEHOLDER)).toBe(true)
+    expect(defaultLanguage(PLACEHOLDER)).toBe("python")
+  })
+
+  it("distinguishes debug translation from pure translation", () => {
+    expect(isDebugTranslationTask(TRANSLATION)).toBe(false)
+    expect(
+      isDebugTranslationTask({
+        ...TRANSLATION,
+        payload: {
+          ...TRANSLATION.payload,
+          template: "var age: integer;\nbegin\n  age = 18;\nend.",
+        },
+      }),
+    ).toBe(true)
   })
 })

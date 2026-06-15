@@ -12,8 +12,8 @@ export default function StudentAssignmentSetsPage() {
 
   return (
     <ShellPage
-      title="Наборы заданий"
-      subtitle="Задания от преподавателя и публичные наборы"
+      title="Мои группы"
+      subtitle="Сборники и задания от преподавателя"
       right={
         <Button size="sm" variant="secondary" asChild>
           <Link to="/groups/join">Вступить в группу</Link>

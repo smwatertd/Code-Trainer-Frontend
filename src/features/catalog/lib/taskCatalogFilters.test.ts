@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   collectCatalogFilterOptions,
+  collectConstructionOptions,
   filterTaskSummaries,
 } from "@/features/catalog/lib/taskCatalogFilters"
 import type { TaskSummary } from "@/shared/types/api"
@@ -56,5 +57,23 @@ describe("collectCatalogFilterOptions", () => {
       taskTypes: ["task_build_from_blocks", "translation"],
       topics: ["basics", "loops"],
     })
+  })
+})
+
+describe("collectConstructionOptions", () => {
+  it("collects distinct construction slugs sorted alphabetically", () => {
+    expect(
+      collectConstructionOptions([
+        { ...TASKS[0], constructions: ["for_loop", "io"] },
+        { ...TASKS[1], constructions: ["for_loop", "if_statement"] },
+        { ...TASKS[2], constructions: [] },
+      ]),
+    ).toEqual(["for_loop", "if_statement", "io"])
+  })
+
+  it("ignores empty construction values", () => {
+    expect(
+      collectConstructionOptions([{ ...TASKS[0], constructions: ["", "stdout_write"] }]),
+    ).toEqual(["stdout_write"])
   })
 })

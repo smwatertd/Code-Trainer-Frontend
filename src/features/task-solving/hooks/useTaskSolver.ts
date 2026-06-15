@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useTaskDetail } from "@/features/catalog"
 import {
   applySubmissionInput,
   buildCodeFromBlocks,
-  createInitialBlockReorderCode,
   createInitialSolverState,
   flowToApiPayload,
+  getLearningStarterCode,
   getTaskBlocks,
+  initialBlockOrder,
+  resolveLearningCodeAfterSwap,
   type SolverMode,
 } from "@/features/task-solving/model/solverState"
 import { getDemoCheckResult, submitDemoCheck } from "@/shared/api/demoClient"
@@ -23,10 +25,31 @@ import {
   getWriteTaskReferenceText,
   resolveKnownLanguage,
   resolveLearningLanguage,
+  resolveLearningLanguageBarOptions,
+  resolveKnownLanguageBarOptions,
+  resolveSubmissionLanguage,
 } from "@/features/task-solving/model/studentUiUtils"
 import { getFlowchartReferenceCode } from "@/features/task-solving/model/flowchartReferenceCode"
 import { useLanguages } from "@/features/languages/hooks/useLanguages"
-import { isBlockReorderTask, isCodeToFlowchartTask, isFlowchartTask } from "@/shared/utils/taskTypes"
+import { isBlockReorderTask, isCodeToFlowchartTask, isFlowchartTask, isPlaceholderTask, isTranslationTask, isWriteFromDescriptionTask } from "@/shared/utils/taskTypes"
+import {
+  assemblePlaceholderCode,
+  countPlaceholderSlots,
+  getPlaceholderTemplate,
+} from "@/features/task-solving/model/placeholderTask"
+import type { BlockPlacement } from "@/domain/blockAssembly"
+import {
+  buildCodeFromBlockTask,
+  blockOrderFromPlacements,
+  createBlockTaskStateForLanguage,
+  getFragmentBaseCode,
+  normalizeBlockOrder,
+} from "@/features/task-solving/model/blockAssemblyHelpers"
+import {
+  getBlockAssemblyTemplate,
+  initialBlockAssemblyOrder,
+  resolveBlockAssemblyKind,
+} from "@/features/task-solving/model/blockAssemblyMode"
 import { getApiErrorMessage } from "@/shared/utils/apiErrors"
 import { showError } from "@/shared/utils/toast"
 
@@ -47,8 +70,10 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
 
   const [code, setCode] = useState("")
   const [language, setLanguage] = useState("python")
-  const [knownLanguage, setKnownLanguage] = useState("python")
+  const [knownLanguage, setKnownLanguageState] = useState("python")
   const [blockOrder, setBlockOrder] = useState<number[]>([])
+  const [blockPlacements, setBlockPlacements] = useState<BlockPlacement[]>([])
+  const [placeholderFills, setPlaceholderFills] = useState<string[]>([])
   const [flow, setFlow] = useState<FlowPayload>({ flow: [], nodes: [], edges: [] })
   const [jobId, setJobId] = useState<string | number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -56,44 +81,104 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
   const [manualResult, setManualResult] = useState<CheckResult | null>(null)
   const [historyResult, setHistoryResult] = useState<CheckResult | null>(null)
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<number | null>(null)
+  const initializedTaskIdRef = useRef<number | null>(null)
+  const languagesHydratedRef = useRef(false)
+
+  const applyLearningLanguage = useCallback(
+    (nextLanguage: string) => {
+      setLanguage(nextLanguage)
+      if (!task) return
+
+      if (isBlockReorderTask(task)) {
+        const next = createBlockTaskStateForLanguage(task, nextLanguage)
+        setBlockOrder(next.blockOrder)
+        setBlockPlacements(next.blockPlacements)
+        setCode(next.code)
+      } else if (isCodeToFlowchartTask(task)) {
+        setCode(getFlowchartReferenceCode(task, nextLanguage))
+      } else if (isTranslationTask(task) || isWriteFromDescriptionTask(task)) {
+        setCode(getLearningStarterCode(task, nextLanguage))
+      } else if (isPlaceholderTask(task)) {
+        setPlaceholderFills(
+          Array(countPlaceholderSlots(getPlaceholderTemplate(task))).fill(""),
+        )
+      }
+    },
+    [task],
+  )
+
+  useEffect(() => {
+    initializedTaskIdRef.current = null
+    languagesHydratedRef.current = false
+  }, [taskId])
 
   useEffect(() => {
     if (taskId == null || !task || task.id !== taskId) {
       return
     }
+    if (initializedTaskIdRef.current === taskId) {
+      return
+    }
+    initializedTaskIdRef.current = taskId
 
     const initial = createInitialSolverState(task, availableLanguageIds)
     const known = resolveKnownLanguage(task)
     const learning = resolveLearningLanguage(task, known, initial.language, availableLanguageIds)
-    setKnownLanguage(known)
+    setKnownLanguageState(known)
     setLanguage(learning)
-    setBlockOrder(initial.blockOrder)
+    const blocks = getTaskBlocks(task, learning)
+    const assemblyTemplate = getBlockAssemblyTemplate(task, learning)
+    const blockOrderInitial = isBlockReorderTask(task)
+      ? initialBlockAssemblyOrder(blocks, assemblyTemplate)
+      : initial.blockOrder
+    setBlockOrder(blockOrderInitial)
+    setBlockPlacements([])
+    setPlaceholderFills(
+      isPlaceholderTask(task)
+        ? Array(countPlaceholderSlots(getPlaceholderTemplate(task))).fill("")
+        : [],
+    )
     setFlow(initial.flow)
     if (isBlockReorderTask(task)) {
-      setCode(createInitialBlockReorderCode(task, initial.language, initial.blockOrder))
+      const kind = resolveBlockAssemblyKind(blocks, assemblyTemplate)
+      if (kind === "fragment") {
+        setCode(getFragmentBaseCode(task, blocks, learning))
+      } else {
+        setCode(buildCodeFromBlockTask(task, blocks, blockOrderInitial, [], learning))
+      }
     } else {
-      setCode(initial.code)
+      setCode(getLearningStarterCode(task, learning))
     }
     setJobId(null)
     setManualResult(null)
     setHistoryResult(null)
     setSelectedSubmissionId(null)
     setSubmitError(null)
-  }, [availableLanguageIds, task, taskId])
+  }, [task, taskId])
 
   useEffect(() => {
-    if (!task) return
-    const serverIds = languages.map((item) => item.id)
-    const learningAvailable = getLearningLanguages(task, serverIds)
-    const resolved = resolveLearningLanguage(task, knownLanguage, language, serverIds)
-    if (resolved !== language && learningAvailable.includes(resolved)) {
-      setLanguage(resolved)
+    if (!task || !availableLanguageIds.length || initializedTaskIdRef.current !== taskId) {
+      return
     }
-  }, [knownLanguage, language, languages, task])
+    if (languagesHydratedRef.current) {
+      return
+    }
+    languagesHydratedRef.current = true
 
-  const knownLanguages = useMemo(() => getKnownLanguages(task), [task])
+    const learningAvailable = getLearningLanguages(task, availableLanguageIds)
+    if (learningAvailable.includes(language)) {
+      return
+    }
+
+    const resolved = resolveLearningLanguage(task, knownLanguage, language, availableLanguageIds)
+    if (resolved !== language && learningAvailable.includes(resolved)) {
+      applyLearningLanguage(resolved)
+    }
+  }, [applyLearningLanguage, availableLanguageIds, knownLanguage, language, task, taskId])
+
+  const knownLanguages = useMemo(() => resolveKnownLanguageBarOptions(task), [task])
   const learningLanguages = useMemo(
-    () => getLearningLanguages(task, availableLanguageIds),
+    () => resolveLearningLanguageBarOptions(task, availableLanguageIds),
     [availableLanguageIds, task],
   )
 
@@ -144,24 +229,28 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
   const resolvedCode = useMemo(() => {
     if (!task) return code
     if (isBlockReorderTask(task)) {
-      return buildCodeFromBlocks(getTaskBlocks(task, language), blockOrder, language)
+      const blocks = getTaskBlocks(task, language)
+      return buildCodeFromBlockTask(task, blocks, blockOrder, blockPlacements, language)
+    }
+    if (isPlaceholderTask(task)) {
+      return assemblePlaceholderCode(getPlaceholderTemplate(task), placeholderFills)
     }
     if (isCodeToFlowchartTask(task)) {
       return getFlowchartReferenceCode(task, language)
     }
     return code
-  }, [blockOrder, code, language, task])
+  }, [blockOrder, blockPlacements, code, language, placeholderFills, task])
 
   const updateKnownLanguage = useCallback(
     (nextKnownLanguage: string) => {
-      setKnownLanguage(nextKnownLanguage)
+      setKnownLanguageState(nextKnownLanguage)
       if (!task) return
       const learning = resolveLearningLanguage(task, nextKnownLanguage, language, availableLanguageIds)
       if (learning !== language) {
-        setLanguage(learning)
+        applyLearningLanguage(learning)
       }
     },
-    [availableLanguageIds, language, task],
+    [applyLearningLanguage, availableLanguageIds, language, task],
   )
 
   const swapLanguages = useCallback(() => {
@@ -173,25 +262,22 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
     }
     const nextKnown = language
     const nextLearning = knownLanguage
-    setKnownLanguage(nextKnown)
-    setLanguage(nextLearning)
+    setKnownLanguageState(nextKnown)
     if (isBlockReorderTask(task)) {
-      setCode(buildCodeFromBlocks(getTaskBlocks(task, nextLearning), blockOrder, nextLearning))
-    } else if (isCodeToFlowchartTask(task)) {
-      setCode(getFlowchartReferenceCode(task, nextLearning))
+      applyLearningLanguage(nextLearning)
+    } else if (isTranslationTask(task) || isWriteFromDescriptionTask(task)) {
+      setLanguage(nextLearning)
+      setCode(resolveLearningCodeAfterSwap(task, nextLearning))
+    } else {
+      applyLearningLanguage(nextLearning)
     }
-  }, [blockOrder, knownLanguage, knownLanguages, language, learningLanguages, task])
+  }, [applyLearningLanguage, knownLanguage, knownLanguages, language, learningLanguages, task])
 
   const updateLanguage = useCallback(
     (nextLanguage: string) => {
-      setLanguage(nextLanguage)
-      if (task && isBlockReorderTask(task)) {
-        setCode(buildCodeFromBlocks(getTaskBlocks(task, nextLanguage), blockOrder, nextLanguage))
-      } else if (task && isCodeToFlowchartTask(task)) {
-        setCode(getFlowchartReferenceCode(task, nextLanguage))
-      }
+      applyLearningLanguage(nextLanguage)
     },
-    [blockOrder, task],
+    [applyLearningLanguage],
   )
 
   const runCheck = useCallback(async () => {
@@ -205,7 +291,7 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
 
     const basePayload = {
       task_id: taskId,
-      language,
+      language: resolveSubmissionLanguage(task, language),
       code: resolvedCode,
     }
 
@@ -259,10 +345,30 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
 
   const updateBlockOrder = useCallback(
     (next: number[]) => {
-      setBlockOrder(next)
-      if (task && isBlockReorderTask(task)) {
-        setCode(buildCodeFromBlocks(getTaskBlocks(task, language), next, language))
+      if (!task || !isBlockReorderTask(task)) {
+        setBlockOrder(next)
+        return
       }
+      const blocks = getTaskBlocks(task, language)
+      const normalized = normalizeBlockOrder(next, blocks)
+      setBlockOrder(normalized)
+      setCode(buildCodeFromBlockTask(task, blocks, normalized, blockPlacements, language))
+    },
+    [blockPlacements, language, task],
+  )
+
+  const updateBlockPlacements = useCallback(
+    (next: BlockPlacement[]) => {
+      setBlockPlacements(next)
+      if (!task || !isBlockReorderTask(task)) return
+      const blocks = getTaskBlocks(task, language)
+      const template = getBlockAssemblyTemplate(task, language)
+      const kind = resolveBlockAssemblyKind(blocks, template)
+      const baseCode = kind === "fragment" ? getFragmentBaseCode(task, blocks, language) : ""
+      const order =
+        next.length > 0 ? blockOrderFromPlacements(next, baseCode) : initialBlockOrder(blocks)
+      setBlockOrder(order)
+      setCode(buildCodeFromBlockTask(task, blocks, order, next, language))
     },
     [language, task],
   )
@@ -283,6 +389,8 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
     swapLanguages,
     blockOrder,
     setBlockOrder: updateBlockOrder,
+    blockPlacements,
+    setBlockPlacements: updateBlockPlacements,
     flow,
     setFlow,
     result,
@@ -293,6 +401,8 @@ export function useTaskSolver({ mode, taskId }: UseTaskSolverOptions) {
     pollError,
     runCheck,
     mode,
+    placeholderFills,
+    setPlaceholderFills,
     assembledCode: resolvedCode,
   }
 }

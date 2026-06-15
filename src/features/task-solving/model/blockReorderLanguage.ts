@@ -67,7 +67,58 @@ export const BLOCK_REORDER_TEMPLATES: Record<
   },
 }
 
+export function isStructuralProgramBlocks(lines: string[]): boolean {
+  const joined = lines.join("\n").toLowerCase()
+  if (
+    /\bprogram\b/.test(joined) ||
+    joined.trimStart().startsWith("begin") ||
+    joined.includes("#include") ||
+    joined.includes("public class") ||
+    joined.includes("using system")
+  ) {
+    return true
+  }
+  // TC42 Pascal fragments: var ... begin ... end.
+  return joined.includes("begin") && (joined.includes("end.") || joined.includes("end;"))
+}
+
+/** Whether block lines fit the target language (e.g. Pascal skeleton vs Python statements). */
+export function blocksMatchLanguageParadigm(lines: string[], language: string): boolean {
+  const lang = String(language || "python").toLowerCase()
+  const structural = isStructuralProgramBlocks(lines)
+  const joined = lines.join("\n").toLowerCase()
+
+  if (lang === "python") {
+    return !structural
+  }
+  if (lang === "pascal") {
+    return structural && (/\bprogram\b/.test(joined) || joined.trimStart().startsWith("begin"))
+  }
+  if (lang === "cpp") {
+    return structural ? joined.includes("#include") : true
+  }
+  if (lang === "java") {
+    return structural ? joined.includes("public class") : true
+  }
+  if (lang === "csharp") {
+    return structural ? joined.includes("using system") : true
+  }
+  return true
+}
+
+export function normalizeProgramCode(text: string): string {
+  return text
+    .trim()
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n")
+}
+
 export function assembleBlockReorderCodeFromLines(lines: string[], language: string): string {
+  const filtered = lines.filter(Boolean)
+  if (isStructuralProgramBlocks(filtered)) {
+    return normalizeProgramCode(filtered.join("\n"))
+  }
   const template = BLOCK_REORDER_TEMPLATES[language] ?? BLOCK_REORDER_TEMPLATES.python
   const linePrefix = template.linePrefix ?? ""
   const bodyLines = lines

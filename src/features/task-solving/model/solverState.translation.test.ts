@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createInitialSolverState } from "./solverState"
+import { createInitialSolverState, getLearningStarterCode } from "./solverState"
 import type { TaskDetail } from "@/shared/types/api"
 
 const TRANSLATION: TaskDetail = {
@@ -37,5 +37,19 @@ describe("createInitialSolverState translation", () => {
 
     expect(initial.code).toContain("age = 18")
     expect(initial.language).toBe("pascal")
+  })
+
+  it("returns empty starter for non-target translation language", () => {
+    const debugTask: TaskDetail = {
+      ...TRANSLATION,
+      payload: {
+        ...TRANSLATION.payload,
+        target_language: "pascal",
+        template: "var age: integer;\nbegin\n  age = 18;\nend.",
+      },
+    }
+
+    expect(getLearningStarterCode(debugTask, "cpp")).toBe("")
+    expect(getLearningStarterCode(debugTask, "pascal")).toContain("age = 18")
   })
 })

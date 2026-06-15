@@ -8,8 +8,11 @@ test("submit task 3 updates loops progress on home", async ({ page }) => {
   await solveTranslationTask3Sum(page)
 
   await page.goto("/")
-  await expect(page.getByTestId("learning-language-python")).toBeVisible()
-  await expect(page.getByTestId("learning-language-python-stats")).toContainText("1/1")
+  await page.getByRole("link", { name: "Учебные треки" }).click()
+  await expect(page).toHaveURL(/\/learn$/)
+  await page.getByTestId("track-card-python").getByRole("link", { name: "Подробнее" }).click()
+  await expect(page).toHaveURL(/\/learn\/python/)
+  await expect(page.getByTestId("track-progress")).toContainText("1/24")
 })
 
 test("logout returns guest access to catalog and tasks", async ({ page }) => {

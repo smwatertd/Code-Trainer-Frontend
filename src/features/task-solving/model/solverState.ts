@@ -1,7 +1,27 @@
 import type { TaskBlock, TaskDetail, CheckResult, FlowPayload } from "@/shared/types/api"
-import { defaultLanguage, isBlockReorderTask, isCodeToFlowchartTask, isFlowchartTask, isTranslationTask } from "@/shared/utils/taskTypes"
-import { assembleBlockReorderCodeFromLines, localizeBlockStatement } from "@/features/task-solving/model/blockReorderLanguage"
+import {
+  defaultLanguage,
+  isBlockReorderTask,
+  isCodeToFlowchartTask,
+  isDebugTranslationTask,
+  isFlowchartTask,
+  isPlaceholderTask,
+  isTranslationTask,
+  isWriteFromDescriptionTask,
+} from "@/shared/utils/taskTypes"
+import {
+  assembleBlockReorderCodeFromLines,
+  blocksMatchLanguageParadigm,
+  isStructuralProgramBlocks,
+  localizeBlockStatement,
+} from "@/features/task-solving/model/blockReorderLanguage"
 import { getFlowchartReferenceCode } from "@/features/task-solving/model/flowchartReferenceCode"
+import {
+  debugTemplateLanguage,
+  getCodeExamples,
+  getReferenceCode,
+  taskWorkingLanguage,
+} from "@/features/task-solving/model/studentUiUtils"
 
 export type SolverMode = "guest" | "student"
 
@@ -28,7 +48,7 @@ export function buildCodeFromBlocks(
 ): string {
   const byId = new Map(blocks.map((block) => [block.id, block.content]))
   const lines = order.map((id) => byId.get(id) ?? "").filter(Boolean)
-  if (language === "python") {
+  if (language === "python" && !isStructuralProgramBlocks(lines)) {
     return lines.join("\n")
   }
   return assembleBlockReorderCodeFromLines(lines, language)
@@ -50,39 +70,163 @@ function normalizeBlockItems(raw: unknown[]): TaskBlock[] {
   })
 }
 
+export function blocksFromExampleCode(code: string): TaskBlock[] {
+  return normalizeBlockItems(
+    code
+      .split("\n")
+      .map((line) => line.trimEnd())
+      .filter((line) => line.trim()),
+  )
+}
+
+function resolveBlocksForLanguage(
+  blocks: TaskBlock[],
+  task: TaskDetail,
+  resolvedLanguage: string,
+): TaskBlock[] {
+  const lines = blocks.map((block) => block.content)
+  if (!lines.length || blocksMatchLanguageParadigm(lines, resolvedLanguage)) {
+    return blocks
+  }
+
+  const example = getCodeExamples(task)[resolvedLanguage.toLowerCase()]
+  if (example?.trim()) {
+    return blocksFromExampleCode(example)
+  }
+
+  return blocks
+}
+
 export function getTaskBlocks(task: TaskDetail | null, language?: string): TaskBlock[] {
   if (!task) return []
   const payload = task.payload
   const resolvedLanguage = language ?? defaultLanguage(task)
   const variants = payload.blocks_by_language
+  let blocks: TaskBlock[] = []
 
   if (variants && typeof variants === "object" && !Array.isArray(variants)) {
     const map = variants as Record<string, unknown>
     const raw = map[resolvedLanguage]
     if (Array.isArray(raw)) {
-      return normalizeBlockItems(raw)
-    }
-
-    const baseRaw =
-      map[defaultLanguage(task)] ??
-      map.python ??
-      map[String(payload.language ?? "python")]
-    if (Array.isArray(baseRaw)) {
-      return normalizeBlockItems(baseRaw).map((block) => ({
-        ...block,
-        content: localizeBlockStatement(block.content, resolvedLanguage),
-      }))
+      const candidate = normalizeBlockItems(raw)
+      const lines = candidate.map((block) => block.content)
+      if (lines.length && blocksMatchLanguageParadigm(lines, resolvedLanguage)) {
+        blocks = candidate
+      }
+    } else {
+      const baseRaw =
+        map[defaultLanguage(task)] ??
+        map.python ??
+        map[String(payload.language ?? "python")]
+      if (Array.isArray(baseRaw)) {
+        blocks = normalizeBlockItems(baseRaw).map((block) => ({
+          ...block,
+          content: localizeBlockStatement(block.content, resolvedLanguage),
+        }))
+      }
     }
   }
 
-  const fallback = payload.blocks
-  const baseItems = Array.isArray(fallback) ? normalizeBlockItems(fallback) : []
-  if (!baseItems.length) return []
+  if (!blocks.length) {
+    const fallback = payload.blocks
+    const baseItems = Array.isArray(fallback) ? normalizeBlockItems(fallback) : []
+    blocks = baseItems.map((block) => ({
+      ...block,
+      content: localizeBlockStatement(block.content, resolvedLanguage),
+    }))
+  }
 
-  return baseItems.map((block) => ({
-    ...block,
-    content: localizeBlockStatement(block.content, resolvedLanguage),
-  }))
+  const example = getCodeExamples(task)[resolvedLanguage.toLowerCase()]
+  if (example?.trim() && !blocks.length) {
+    return blocksFromExampleCode(example)
+  }
+
+  if (
+    example?.trim() &&
+    blocks.length > 0 &&
+    !blocksMatchLanguageParadigm(
+      blocks.map((block) => block.content),
+      resolvedLanguage,
+    )
+  ) {
+    return blocksFromExampleCode(example)
+  }
+
+  return resolveBlocksForLanguage(blocks, task, resolvedLanguage)
+}
+
+function templateFromLanguageVariant(
+  payload: Record<string, unknown>,
+  language: string,
+): string | null {
+  const variants = payload.language_variants
+  if (!variants || typeof variants !== "object" || Array.isArray(variants)) {
+    return null
+  }
+  const variant = (variants as Record<string, Record<string, unknown>>)[language.toLowerCase()]
+  if (!variant || typeof variant.template !== "string") {
+    return null
+  }
+  return variant.template
+}
+
+/** Starter code for the «Учу» editor when the learning language changes. */
+export function getLearningStarterCode(task: TaskDetail | null, language: string): string {
+  if (!task) return ""
+  const lang = language.toLowerCase()
+  const payload = (task.payload ?? {}) as Record<string, unknown>
+
+  if (isCodeToFlowchartTask(task)) {
+    return getFlowchartReferenceCode(task, lang)
+  }
+
+  const variantTemplate = templateFromLanguageVariant(payload, lang)
+  if (variantTemplate !== null) {
+    return variantTemplate
+  }
+
+  if (isDebugTranslationTask(task)) {
+    const working = debugTemplateLanguage(task)
+    const template = String(payload.template ?? "")
+    if (template.trim() && lang === working) {
+      return template
+    }
+    return ""
+  }
+
+  if (isTranslationTask(task)) {
+    const target = String(payload.target_language ?? "").toLowerCase()
+    const template = String(payload.template ?? "")
+    if (template.trim() && lang === target) {
+      return template
+    }
+    return ""
+  }
+
+  if (isPlaceholderTask(task)) {
+    const working = taskWorkingLanguage(task)
+    if (lang === working) {
+      return String(payload.placeholder_template ?? payload.template_code ?? "")
+    }
+    return ""
+  }
+
+  if (isWriteFromDescriptionTask(task)) {
+    return String(payload.template ?? "")
+  }
+
+  return String(payload.template ?? "")
+}
+
+/** Code for «Учу» after language swap: template first; этalon only for debug/fix tasks. */
+export function resolveLearningCodeAfterSwap(task: TaskDetail | null, language: string): string {
+  if (!task) return ""
+  const starter = getLearningStarterCode(task, language)
+  if (starter.trim()) return starter
+  if (isDebugTranslationTask(task)) {
+    return getReferenceCode(task, language) ?? ""
+  }
+  return ""
 }
 
 export function createInitialSolverState(
@@ -93,10 +237,7 @@ export function createInitialSolverState(
   const language = defaultLanguage(task, availableLanguageIds)
   return {
     language,
-    code:
-      task && isCodeToFlowchartTask(task)
-        ? getFlowchartReferenceCode(task, language)
-        : String(task?.payload.template ?? ""),
+    code: getLearningStarterCode(task, language),
     blockOrder: initialBlockOrder(blocks),
     flow: { flow: [], nodes: [], edges: [] },
   }

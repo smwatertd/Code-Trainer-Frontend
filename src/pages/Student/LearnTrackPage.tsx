@@ -1,15 +1,17 @@
 import { Link, useParams } from "react-router-dom"
 import { useAuth } from "@/features/auth"
 import { useLanguageTrack } from "@/features/curriculum"
+import { trackDescription } from "@/features/curriculum/lib/trackMeta"
 import ChapterCard from "@/features/curriculum/ui/ChapterCard"
+import LangMini, { TRACK_LANGUAGE_OPTIONS } from "@/features/curriculum/ui/LangMini"
 import { labelLanguage } from "@/shared/utils/labels"
-import ShellPage from "@/shared/ui/ShellPage"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 
 export default function LearnTrackPage() {
   const { language = "python" } = useParams()
   const label = labelLanguage(language)
+  const trackOption = TRACK_LANGUAGE_OPTIONS.find((option) => option.id === language)
   const { isAuthenticated } = useAuth()
   const { data: track, isLoading, error, refetch } = useLanguageTrack(language)
 
@@ -18,17 +20,13 @@ export default function LearnTrackPage() {
   const nextChapter =
     track?.collections.find((chapter) => !chapter.completed && chapter.next_task) ?? null
   const complete = Boolean(agg && agg.total_tasks > 0 && agg.passed_tasks >= agg.total_tasks)
+  const description = trackDescription(language)
 
   return (
-    <ShellPage
-      title={`Учебный трек · ${label}`}
-      subtitle="Линейный путь по темам с задачами и автоматической проверкой"
-      right={
-        <Button size="sm" variant="secondary" asChild>
-          <Link to="/">К списку задач</Link>
-        </Button>
-      }
-    >
+    <div className="mx-auto max-w-[920px] py-6">
+      <Link to="/learn" className="mb-4 inline-flex text-sm font-medium text-ink-muted hover:text-lime">
+        ← Все учебные треки
+      </Link>
       {isLoading ? (
         <p className="text-sm text-ink-muted">Загрузка трека…</p>
       ) : error || !track ? (
@@ -42,22 +40,22 @@ export default function LearnTrackPage() {
         <>
           <div className="track-hero mb-6">
             <div className="flex flex-wrap items-start gap-[18px]">
-              <div className="grid h-14 w-14 flex-none place-items-center rounded-2xl border border-purple/35 bg-purple-soft font-mono text-xl font-bold text-[#b89bff]">
-                {label.slice(0, 3)}
-              </div>
+              <div className="track-glyph">{trackOption?.glyph ?? label.slice(0, 3)}</div>
               <div className="min-w-0 flex-[1_1_280px]">
                 <div className="mb-1.5 flex flex-wrap items-center gap-2.5">
                   <Badge variant="secondary">Учебный трек</Badge>
                   {complete ? <Badge variant="default">✓ Трек пройден</Badge> : null}
+                  <LangMini language={language} />
                 </div>
-                <h2 className="mb-1.5 text-[30px] font-extrabold tracking-[-0.8px]">{label}</h2>
-                <p className="max-w-[440px] text-[14.5px] text-ink-muted">
-                  Проходите сборники по порядку — от базовых конструкций к более сложным задачам.
-                </p>
+                <h1 className="mb-1.5 text-[30px] font-extrabold tracking-[-0.8px]">{label}</h1>
+                <p className="max-w-[440px] text-[14.5px] text-ink-muted">{description}</p>
               </div>
               <div className="min-w-[140px] text-right">
                 <div className="text-[34px] font-extrabold tracking-[-0.5px] text-lime">{aggPercent}%</div>
-                <div className="mb-2.5 font-mono text-[12.5px] text-ink-faint">
+                <div
+                  className="mb-2.5 font-mono text-[12.5px] text-ink-faint"
+                  data-testid="track-progress"
+                >
                   {agg?.passed_tasks ?? 0}/{agg?.total_tasks ?? 0} задач
                 </div>
                 <div className="tp-progress">
@@ -120,6 +118,6 @@ export default function LearnTrackPage() {
           ) : null}
         </>
       )}
-    </ShellPage>
+    </div>
   )
 }

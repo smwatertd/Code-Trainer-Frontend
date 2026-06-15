@@ -81,7 +81,28 @@ describe("extractPanelErrors", () => {
     expect(errors[0]?.text).toContain("Line 1: bad indent")
     expect(errors[1]).toMatchObject({ source: "Линтер" })
     expect(errors[1]?.text).toContain("unused variable")
-    expect(errors[2]).toMatchObject({ source: "Структуры", text: "wrong block text" })
+    expect(errors[2]).toMatchObject({
+      source: "Структуры",
+      text: "wrong block text",
+      tone: "purple",
+    })
+  })
+
+  it("maps missing construction warnings for structures panel", () => {
+    const result: CheckResult = {
+      status: "FAILED",
+      pattern_errors: [
+        { type: "CONSTRUCTION", message: "Отсутствует конструкция: Точка входа программы" },
+      ],
+    }
+
+    const errors = extractPanelErrors(result)
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toMatchObject({
+      source: "Структуры",
+      tone: "purple",
+      text: "Отсутствует конструкция: Точка входа программы",
+    })
   })
 
   it("skips blank error messages", () => {

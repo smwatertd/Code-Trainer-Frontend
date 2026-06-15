@@ -1,5 +1,8 @@
-import { canSwapParallelLanguages, langDisplay } from "@/features/task-solving/model/studentUiUtils"
-import SimpleSelect from "@/shared/ui/SimpleSelect"
+import {
+  canSwapParallelLanguages,
+  langDisplay,
+} from "@/features/task-solving/model/studentUiUtils"
+import { cn } from "@/shared/ui/cn"
 
 type ParallelLanguageBarProps = {
   knownLanguage: string
@@ -10,6 +13,9 @@ type ParallelLanguageBarProps = {
   onLearningLanguageChange: (language: string) => void
   onSwap?: () => void
 }
+
+const selectClassName =
+  "h-[34px] min-w-[140px] rounded-md border border-[#333d4f] bg-bg-2 px-2.5 text-sm text-ink outline-none transition focus:border-lime/50 focus:ring-2 focus:ring-lime/20"
 
 export default function ParallelLanguageBar({
   knownLanguage,
@@ -32,21 +38,25 @@ export default function ParallelLanguageBar({
       <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-ink-faint">
         Я знаю
       </span>
-      <SimpleSelect
+      <select
         value={knownLanguage}
-        onValueChange={onKnownLanguageChange}
-        className="h-[34px] w-[140px] border-[#333d4f] bg-bg-2"
-        options={knownLanguages.map((lang) => ({
-          value: lang,
-          label: langDisplay(lang),
-          disabled: lang === learningLanguage,
-        }))}
-      />
+        onChange={(event) => onKnownLanguageChange(event.target.value)}
+        className={selectClassName}
+        data-testid="known-language-select"
+        aria-label="Я знаю"
+      >
+        {knownLanguages.map((lang) => (
+          <option key={lang} value={lang} disabled={lang === learningLanguage}>
+            {langDisplay(lang)}
+          </option>
+        ))}
+      </select>
       <button
         type="button"
-        className="swap-btn"
+        className={cn("swap-btn", !swapEnabled && "swap-btn-disabled")}
         disabled={!swapEnabled}
         onClick={onSwap}
+        data-testid="language-swap-btn"
         title={
           swapEnabled
             ? "Поменять языки местами"
@@ -58,16 +68,19 @@ export default function ParallelLanguageBar({
       <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-ink-faint">
         Учу
       </span>
-      <SimpleSelect
+      <select
         value={learningLanguage}
-        onValueChange={onLearningLanguageChange}
-        className="h-[34px] w-[140px] border-[#333d4f] bg-bg-2"
-        options={learningLanguages.map((lang) => ({
-          value: lang,
-          label: langDisplay(lang),
-          disabled: lang === knownLanguage,
-        }))}
-      />
+        onChange={(event) => onLearningLanguageChange(event.target.value)}
+        className={selectClassName}
+        data-testid="learning-language-select"
+        aria-label="Учу"
+      >
+        {learningLanguages.map((lang) => (
+          <option key={lang} value={lang} disabled={lang === knownLanguage}>
+            {langDisplay(lang)}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

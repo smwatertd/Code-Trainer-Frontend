@@ -1,14 +1,10 @@
 import { useMemo, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { useCatalogTasks } from "@/features/catalog"
 import { filterTaskSummaries } from "@/features/catalog/lib/taskCatalogFilters"
-import {
-  countSolvedTasks,
-  findNextIncompleteTask,
-} from "@/features/catalog/lib/taskCatalogView"
+import { countSolvedTasks } from "@/features/catalog/lib/taskCatalogView"
 import TaskCatalog, { TASK_CATALOG_FILTER_ALL } from "@/features/catalog/ui/TaskCatalog"
 import AssignmentSetsSidebar from "@/features/catalog/ui/AssignmentSetsSidebar"
-import LearningLanguagesBlock from "@/features/catalog/ui/LearningLanguagesBlock"
 import { useAuth } from "@/features/auth"
 import { useLanguages } from "@/features/languages/hooks/useLanguages"
 import GuestBanner from "@/shared/ui/GuestBanner"
@@ -17,7 +13,6 @@ import { Button } from "@/shared/ui/button"
 import { getApiErrorMessage } from "@/shared/utils/apiErrors"
 
 export default function HomePage() {
-  const navigate = useNavigate()
   const { isAuthenticated, isGuest } = useAuth()
   const { data: languages = [] } = useLanguages()
   const [difficultyFilter, setDifficultyFilter] = useState(TASK_CATALOG_FILTER_ALL)
@@ -49,19 +44,12 @@ export default function HomePage() {
 
   const solvedCount = useMemo(() => countSolvedTasks(allTasks), [allTasks])
   const subtitle = isAuthenticated
-    ? `Решено ${solvedCount} из ${allTasks.length} · уровень задач постепенно повышается`
+    ? `Решено ${solvedCount} из ${allTasks.length} · средняя сложность растёт`
     : `Показано ${tasks.length} из ${allTasks.length} · войдите, чтобы сохранять прогресс`
 
   const swapLangs = () => {
     setLangFrom(langTo)
     setLangTo(langFrom)
-  }
-
-  const continueLearning = () => {
-    const nextTask = findNextIncompleteTask(allTasks)
-    if (nextTask) {
-      navigate(`/tasks/${nextTask.id}`)
-    }
   }
 
   return (
@@ -77,8 +65,8 @@ export default function HomePage() {
         subtitle={subtitle}
         right={
           isAuthenticated ? (
-            <Button size="sm" onClick={continueLearning}>
-              ▸ Продолжить обучение
+            <Button size="sm" variant="secondary" asChild>
+              <Link to="/student/profile">Профиль ученика</Link>
             </Button>
           ) : (
             <Button size="sm" asChild>
@@ -88,10 +76,15 @@ export default function HomePage() {
         }
       />
 
-      <LearningLanguagesBlock />
-
-      <div className="grid items-start gap-[18px] xl:grid-cols-[1fr_290px]">
+      <div
+        className={
+          isAuthenticated
+            ? "flex flex-col gap-[18px xl:flex-row xl:items-start xl:gap-6"
+            : undefined
+        }
+      >
         <TaskCatalog
+          className={isAuthenticated ? "min-w-0 flex-1" : "w-full"}
           tasks={tasks}
           filterSourceTasks={allTasks}
           isLoading={isLoading}
@@ -112,7 +105,10 @@ export default function HomePage() {
           onLangToChange={setLangTo}
           onSwapLangs={swapLangs}
         />
-        {isAuthenticated ? <AssignmentSetsSidebar className="hidden xl:block" /> : null}
+
+        {isAuthenticated ? (
+          <AssignmentSetsSidebar className="w-full shrink-0 xl:w-[290px]" />
+        ) : null}
       </div>
     </div>
   )

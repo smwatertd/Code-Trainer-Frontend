@@ -18,5 +18,10 @@ export const queryKeys = {
   joinedGroups: ["groups", "joined"] as const,
   groupDashboard: (groupId: number) => ["groups", groupId, "dashboard"] as const,
   teacherAssignmentSets: ["assignment-sets", "mine"] as const,
+  teacherTasks: () => ["teacher", "tasks", "mine"] as const,
+  teacherTask: (taskId: number) => ["teacher", "tasks", taskId] as const,
   accessibleAssignmentSets: ["assignment-sets", "accessible"] as const,
+  myProfile: ["profiles", "me"] as const,
+  userProfile: (userId: number, teacherId: number | null) =>
+    ["profiles", "users", userId, teacherId] as const,
 }

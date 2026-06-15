@@ -13,6 +13,8 @@ import {
   hasReferencePane,
   resolveKnownLanguage,
   resolveLearningLanguage,
+  resolveLearningLanguageBarOptions,
+  shouldShowParallelLanguageBar,
 } from "@/features/task-solving/model/studentUiUtils"
 import { buildTestRows, countTestStats } from "@/features/task-solving/model/testPanelUtils"
 
@@ -48,6 +50,46 @@ const BLOCK_REORDER: TaskDetail = {
     code_examples: { python: "print('a')", cpp: 'cout << "a";' },
     test_cases: [{ inputs: "", output: "a" }],
     constructions: ["io"],
+  },
+}
+
+const BLOCK_HELLO: TaskDetail = {
+  id: 1,
+  title: "Hello blocks",
+  description: "desc",
+  difficulty: "easy",
+  task_type: "task_build_from_blocks",
+  payload: {
+    language: "pascal",
+    code_examples: {
+      python: "print('Hello')",
+      pascal: "program Main;\nbegin\n  writeln('Hello');\nend.",
+    },
+    blocks_by_language: {
+      pascal: [
+        { id: 0, content: "program Main;" },
+        { id: 1, content: "begin" },
+        { id: 2, content: "writeln('Hello');" },
+        { id: 3, content: "end." },
+      ],
+    },
+    constructions: ["program_entry", "stdout_write"],
+  },
+}
+
+const PLACEHOLDER: TaskDetail = {
+  id: 331,
+  title: "Placeholder",
+  description: "desc",
+  difficulty: "medium",
+  task_type: "task_fill_placeholders",
+  payload: {
+    language: "python",
+    target_language: "python",
+    placeholder_template: "name = ___()",
+    placeholder_bank: ["input"],
+    code_examples: { python: "name = input()" },
+    constructions: ["stdin_read"],
   },
 }
 
@@ -136,6 +178,38 @@ describe("studentUiUtils", () => {
     ).toBe(true)
     expect(canSwapParallelLanguages("python", "python", ["python"], ["python"])).toBe(false)
     expect(canSwapParallelLanguages("python", "cpp", ["python"], ["cpp"])).toBe(false)
+    expect(
+      canSwapParallelLanguages("python", "pascal", ["python", "pascal"], ["python", "pascal"]),
+    ).toBe(true)
+    expect(
+      canSwapParallelLanguages("python", "pascal", ["python", "pascal"], ["pascal", "python"]),
+    ).toBe(true)
+  })
+
+  it("merges known languages into learning bar options", () => {
+    expect(resolveLearningLanguageBarOptions(TRANSLATION, ["python", "pascal", "cpp"])).toEqual(
+      expect.arrayContaining(["python", "pascal", "cpp"]),
+    )
+  })
+
+  it("keeps seeded code examples for block reorder reference pane", () => {
+    expect(getReferenceCode(BLOCK_HELLO, "python")).toBe("print('Hello')")
+    expect(getReferenceCode(BLOCK_HELLO, "pascal")).toContain("program Main;")
+    expect(getLearningLanguages(BLOCK_HELLO, ["python", "pascal"])).toEqual(
+      expect.arrayContaining(["pascal", "python"]),
+    )
+  })
+
+  it("resolves placeholder task learning language", () => {
+    expect(getLearningLanguages(PLACEHOLDER, ["python", "pascal"])).toEqual(["python"])
+    expect(hasReferencePane(PLACEHOLDER)).toBe(true)
+    expect(
+      shouldShowParallelLanguageBar(
+        PLACEHOLDER,
+        getKnownLanguages(PLACEHOLDER),
+        getLearningLanguages(PLACEHOLDER, ["python", "pascal"]),
+      ),
+    ).toBe(false)
   })
 
   it("detects reference pane visibility by task type", () => {
@@ -149,6 +223,10 @@ describe("studentUiUtils", () => {
     expect(getTaskTestCases(null)).toEqual([])
     expect(getKnownLanguages(null)).toEqual([])
     expect(getReferenceCode(null, "python")).toBeNull()
+    expect(resolveLearningLanguageBarOptions(null, ["python", "cpp"])).toEqual(["python", "cpp"])
+    expect(resolveKnownLanguage(null)).toBe("python")
+    expect(resolveLearningLanguage(null, "python", "cpp", ["python", "cpp"])).toBe("python")
+    expect(shouldShowParallelLanguageBar(null, [], [])).toBe(false)
   })
 })
 
